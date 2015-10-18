@@ -137,6 +137,18 @@ body {
   align-items: stretch;
   -webkit-align-items: stretch; }
 
+.detail .toolbar {
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: row;
+  -webkit-flex-direction: row;
+  flex-wrap: nowrap;
+  -webkit-flex-wrap: nowrap;
+  justify-content: 0;
+  -webkit-justify-content: 0;
+  align-items: stretch;
+  -webkit-align-items: stretch; }
+
 .toolbar-compact {
   flex-grow: 0;
   -webkit-flex-grow: 0;
@@ -247,7 +259,8 @@ body {
     min-width: 140px;
     border: none;
     outline: none;
-    font: 14px/1.5 "Source Sans Pro", sans-serif; }
+    font: 14px/1.5 "Source Sans Pro", sans-serif;
+    color: #333; }
 
 .tag-menu {
   padding: 0 8px;
@@ -273,7 +286,6 @@ body {
   text-align: center; }
 
 .detail-toolbar {
-  padding: 0 8px;
   display: flex;
   display: -webkit-flex;
   flex-direction: row;
@@ -282,16 +294,36 @@ body {
   -webkit-flex-wrap: nowrap;
   justify-content: flex-start;
   -webkit-justify-content: flex-start;
-  align-items: center;
-  -webkit-align-items: center; }
+  align-items: stretch;
+  -webkit-align-items: stretch;
+  flex-grow: 1;
+  -webkit-flex-grow: 1;
+  flex-shrink: 1;
+  -webkit-flex-shrink: 1;
+  flex-basis: 100%;
+  -webkit-flex-basis: 100%;
+  align-self: auto;
+  -webkit-align-self: auto;
+  padding: 8px; }
   .detail-toolbar > div {
-    margin: 0 4px;
-    padding: 2px 8px;
-    border: 1px solid #eee; }
+    margin: 0 8px;
+    width: 28px;
+    display: flex;
+    display: -webkit-flex;
+    flex-direction: row;
+    -webkit-flex-direction: row;
+    flex-wrap: nowrap;
+    -webkit-flex-wrap: nowrap;
+    justify-content: center;
+    -webkit-justify-content: center;
+    align-items: center;
+    -webkit-align-items: center; }
     .detail-toolbar > div:focus {
       outline: none; }
     .detail-toolbar > div:active {
       background: #DDD; }
+    .detail-toolbar > div:last-child {
+      width: auto; }
 
 .search-field {
   height: 100%;
@@ -360,13 +392,14 @@ body {
     -webkit-flex-basis: 100%;
     align-self: auto;
     -webkit-align-self: auto; }
-    .navigation-bar > div:first-child, .navigation-bar > div:last-child {
+    .navigation-bar > div:first-child,
+    .navigation-bar > div:last-child {
       flex-grow: 1;
       -webkit-flex-grow: 1;
       flex-shrink: 0;
       -webkit-flex-shrink: 0;
-      flex-basis: 20%;
-      -webkit-flex-basis: 20%;
+      flex-basis: 28px;
+      -webkit-flex-basis: 28px;
       align-self: auto;
       -webkit-align-self: auto; }
 
@@ -382,3 +415,52 @@ body {
   cursor: pointer; }
   .button:hover {
     background: #eef3f8; }
+
+/**
+ * Sign In/Sign Up
+ */
+.app {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: row;
+  -webkit-flex-direction: row;
+  flex-wrap: nowrap;
+  -webkit-flex-wrap: nowrap;
+  justify-content: center;
+  -webkit-justify-content: center;
+  align-items: center;
+  -webkit-align-items: center; }
+
+.login-form > div {
+  flex-grow: 1 0 auto;
+  -webkit-flex-grow: 1 0 auto;
+  flex-shrink: 1;
+  -webkit-flex-shrink: 1;
+  flex-basis: auto;
+  -webkit-flex-basis: auto;
+  align-self: auto;
+  -webkit-align-self: auto; }
+
+.login-form input {
+  max-width: 100%; }
+
+.login-form > div:last-child {
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: row;
+  -webkit-flex-direction: row;
+  flex-wrap: nowrap;
+  -webkit-flex-wrap: nowrap;
+  justify-content: flex-end;
+  -webkit-justify-content: flex-end;
+  align-items: center;
+  -webkit-align-items: center;
+  margin-top: 8px; }
+
+.login-form .button {
+  padding: 4px 8px; }
