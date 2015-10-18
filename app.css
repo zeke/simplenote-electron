@@ -69,6 +69,7 @@ body {
   outline: none; }
 
 .source-list-item {
+  cursor: pointer;
   padding: 8px 24px 8px 12px;
   display: flex;
   display: -webkit-flex;
@@ -228,7 +229,8 @@ body {
   align-items: center;
   -webkit-align-items: center;
   overflow-x: scroll;
-  overflow-y: hidden; }
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; }
   .tag-editor:focus {
     outline: none; }
   .tag-editor::-webkit-scrollbar {
@@ -368,7 +370,8 @@ body {
     -webkit-align-self: auto;
     border-radius: 50px;
     border: 1px solid #eee;
-    padding: 4px 8px; }
+    padding: 4px 8px;
+    -webkit-appearance: none; }
     .search-field input:focus {
       outline: none; }
 
