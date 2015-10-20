@@ -20583,7 +20583,7 @@
 	
 	  _closeNote: function _closeNote() {
 	    this.replaceState(null, "Simplenote", "/");
-	    this.setState({ note: null });
+	    this.setState({ note: null, note_id: null });
 	  },
 	
 	  onAuthChanged: function onAuthChanged() {
@@ -25193,8 +25193,7 @@
 	};
 	
 	Bucket.prototype.update = function(id, data, options, callback){
-		var emit = this.emit.bind(this);
-		if (typeof options == 'function') {
+		if (typeof options === 'function') {
 			callback = options;
 		}
 	  return this.store.update(id, data, callback);
