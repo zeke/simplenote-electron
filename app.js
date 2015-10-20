@@ -20582,7 +20582,7 @@
 	  },
 	
 	  _closeNote: function _closeNote() {
-	    this.replaceState(null, "Simplenote", "/");
+	    // this.replaceState(null, "Simplenote", "/");
 	    this.setState({ note: null, note_id: null });
 	  },
 	
