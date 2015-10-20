@@ -55,7 +55,7 @@
 	
 	var React = __webpack_require__(2),
 	    App = __webpack_require__(158),
-	    simperium = __webpack_require__(196),
+	    simperium = __webpack_require__(263),
 	    auth = new simperium.Auth(config.app_id, config.app_key),
 	    cookie = __webpack_require__(266).parse(document.cookie);
 	
@@ -20525,6 +20525,7 @@
 	var PlusIcon = __webpack_require__(194);
 	var NoteDisplayMixin = __webpack_require__(161);
 	var classNames = __webpack_require__(162);
+	var simperium = __webpack_require__(196);
 	
 	module.exports = React.createClass({
 	  displayName: 'exports',
@@ -20564,7 +20565,6 @@
 	
 	  _onPopState: function _onPopState(event) {
 	    var state = event.state;
-	    // todo: retrieve the note and display it
 	    if (state) {
 	      this.props.notes.get(state.id, this._onGetNote);
 	    } else {
@@ -20578,7 +20578,7 @@
 	  },
 	
 	  _onGetNote: function _onGetNote(e, note) {
-	    this.setState({ note: note, note_id: note.id });
+	    this.setState({ note: note, note_id: note.id, revisions: null });
 	  },
 	
 	  _closeNote: function _closeNote() {
@@ -20595,11 +20595,7 @@
 	  },
 	
 	  onSelectNote: function onSelectNote(note_id) {
-	    // TODO: fetch note from store
 	    this.props.notes.get(note_id, this._onGetNote);
-	    // var details = this.noteTitleAndPreview(note);
-	    // // window.history.pushState({id: note.id}, details.title != "" ? details.title : 'Untitled', '/' + note.id);
-	    //     this.setState({note_id: note.id, revisions: null});
 	  },
 	
 	  onNotesIndex: function onNotesIndex() {
@@ -20639,16 +20635,32 @@
 	
 	  onNoteUpdate: function onNoteUpdate(id, data, original, patch) {
 	
+	    // refresh the notes list
 	    this.onNotesIndex();
 	
-	    console.log("Note updated", id, data, original, patch);
+	    if (this.state.note_id == id && !!patch) {
 	
-	    if (this.state.note_id == id) {
-	      console.log("Update cursor location and do conflict resolution?");
+	      // working is the state of the note in the editor
+	      var working = this.state.note.data;
 	
-	      // TODO: conflict resolution of the note and update the correct
-	      // cursor location.
-	      // this.setState({note: note, patch: patch});
+	      // diff of working and original will produce the modifications the client has currently made
+	      var working_diff = simperium.util.change.diff(original, working);
+	      // generate a patch that composes both the working changes and upstream changes
+	      var patch = simperium.util.change.transform(working_diff, patch, original);
+	      // apply the new patch to the upstream data
+	      var rebased = simperium.util.change.apply(patch, data);
+	
+	      // TODO: determine where the cursor is and put it in the correct place
+	      // when applying the rebased content
+	
+	      this.state.note.data = rebased;
+	
+	      // immediately save the content
+	      this.setState({ note: this.state.note });
+	
+	      var notes = this.props.notes,
+	          note = this.state.note;
+	      this.onUpdateContent(note, note.data.content);
 	    }
 	  },
 	
@@ -20691,10 +20703,8 @@
 	      this.setState({ note_id: note.id });
 	
 	      // update the bucket but don't fire a sync immediately
-	      console.log("Update without sync", note.data.content);
 	      this.props.notes.update(note.id, note.data, { sync: false });
 	      var commit = (function () {
-	        console.log("Syncing");
 	        this.props.notes.touch(note.id);
 	      }).bind(this);
 	
@@ -20833,7 +20843,6 @@
 	
 	    cb();
 	    clearTimer(id);
-	    console.log(id, "Fired after", ellapsed);
 	  };
 	
 	  clearTimeout(timer.id);
@@ -20967,7 +20976,6 @@
 			while (preview == "" && lb !== -1) {
 				var nlb = content.indexOf("\n", lb + 1);
 				var preview = content.slice(lb + 1, nlb);
-				console.log("Preview", preview);
 				lb = nlb;
 			}
 	
@@ -23908,140 +23916,9 @@
 /* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
-	
-	var simperium = __webpack_require__(197),
-	    bucket_store = __webpack_require__(264),
-	    ghost_store = __webpack_require__(265),
-	    util = __webpack_require__(200),
-	    events = __webpack_require__(203),
-	    Bucket = simperium.Client.Bucket;
-	
-	module.exports = function (appID, token, bucketConfig, database, version) {
-	  return new BrowserClient(appID, token, bucketConfig, database, version);
-	};
-	
-	module.exports.Auth = simperium.Auth;
-	
-	Bucket.prototype.query = function (fn) {
-	  this.store.setup.then(fn);
-	};
-	
-	function BrowserClient(appID, token, bucketConfig, database, version) {
-	  this.databaseName = database || "simperium-objects";
-	  this.databaseVersion = version || 1;
-	  var config = this.bucketConfig = bucketConfig;
-	  this.bucketDB = bucket_store(this.configureDb.bind(this));
-	  this.buckets = {};
-	
-	  var _objectStoreProvider = this.bucketDB.provider();
-	  this.ghostStore = ghost_store;
-	
-	  this.client = simperium(appID, token, {
-	    ghostStoreProvider: ghost_store,
-	    objectStoreProvider: function objectStoreProvider(bucket) {
-	      var store = _objectStoreProvider.apply(null, arguments);
-	      if (config[bucket.name].beforeIndex) {
-	        store.beforeIndex = config[bucket.name].beforeIndex;
-	      }
-	      return store;
-	    }
-	  });
-	
-	  ['send', 'message', 'connect', 'reconnect', 'disconnect', 'unauthorized'].forEach((function (event) {
-	    this.client.on(event, (function () {
-	      var args = [].slice.call(arguments);
-	      this.emit.apply(this, [event].concat(args));
-	    }).bind(this));
-	  }).bind(this));
-	
-	  for (var bucket in bucketConfig) {
-	    this.buckets[bucket] = this.client.bucket(bucket);
-	  }
-	}
-	
-	util.inherits(BrowserClient, events.EventEmitter);
-	
-	BrowserClient.prototype.configureDb = function (resolve, reject) {
-	
-	  var openRequest = window.indexedDB.open(this.databaseName, this.databaseVersion);
-	  var upgraded = false;
-	  var buckets = this.buckets;
-	
-	  openRequest.onupgradeneeded = (function (e) {
-	    upgraded = true;
-	    var db = e.target.result;
-	
-	    var stores = db.objectStoreNames;
-	    var objectStore;
-	
-	    for (var name in this.bucketConfig) {
-	      var setup = this.bucketConfig[name];
-	      if (typeof setup !== 'function') {
-	        setup = setup.configure;
-	      }
-	      if (stores.contains(name)) db.deleteObjectStore(name);
-	      objectStore = db.createObjectStore(name, { keyPath: 'id' });
-	      setup(objectStore);
-	    }
-	  }).bind(this);
-	
-	  openRequest.onerror = function (e) {
-	    console.log("So failed", e);
-	  };
-	
-	  openRequest.onsuccess = (function (e) {
-	    // if we upgraded we want to refresh object stores with the ghost stores
-	    global.bucketDB = e.target.result;
-	    resolve(e.target.result);
-	
-	    if (!upgraded) return;
-	
-	    // reload buckets
-	    for (var name in this.buckets) {
-	      this.buckets[name].reload();
-	    }
-	  }).bind(this);
-	};
-	
-	BrowserClient.prototype.isAuthorized = function () {
-	  return !!this.client.accessToken;
-	};
-	
-	BrowserClient.prototype.reset = function () {
-	  // loop through each known bucket and generate a promise to reset the bucket
-	  return this.bucketDB.reset().then(function () {
-	    return ghost_store.reset();
-	  }, function (e) {
-	    console.error("Failed to reset", e);
-	  });
-	};
-	
-	BrowserClient.prototype.bucket = function (name) {
-	  return this.buckets[name];
-	};
-	
-	BrowserClient.prototype.setUser = function (user) {
-	  // todo, set the user access token and have the buckets reconnect
-	  this.client.setAccessToken(user.access_token);
-	  this.emit('authorized');
-	};
-	
-	BrowserClient.prototype.deauthorize = function () {
-	  this.client.setAccessToken(null);
-	  this.emit('unauthorized');
-	  this.client.disconnect();
-	  this.reset();
-	};
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 197 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var User = __webpack_require__(198);
-	var Client = __webpack_require__(199);
-	var Auth = __webpack_require__(230);
+	var User = __webpack_require__(197);
+	var Client = __webpack_require__(198);
+	var Auth = __webpack_require__(229);
 	
 	module.exports = function(appId, token, options) {
 	  return new Client(appId, token, options);
@@ -24050,10 +23927,10 @@
 	module.exports.Auth = Auth;
 	module.exports.User = User;
 	module.exports.Client = Client;
-
+	module.exports.util = __webpack_require__(207);
 
 /***/ },
-/* 198 */
+/* 197 */
 /***/ function(module, exports) {
 
 	module.exports = User;
@@ -24069,25 +23946,25 @@
 	}
 
 /***/ },
-/* 199 */
+/* 198 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var util = __webpack_require__(200);
+	var util = __webpack_require__(199);
 	var format = util.format;
-	var EventEmitter = __webpack_require__(203).EventEmitter;
-	var Bucket = __webpack_require__(204);
-	var Channel = __webpack_require__(207);
-	var simperiumUtil = __webpack_require__(208);
+	var EventEmitter = __webpack_require__(202).EventEmitter;
+	var Bucket = __webpack_require__(203);
+	var Channel = __webpack_require__(206);
+	var simperiumUtil = __webpack_require__(207);
 	var arglock = simperiumUtil.fn.arglock;
 	
-	var defaultGhostStoreProvider = __webpack_require__(215);
-	var defaultObjectStoreProvider = __webpack_require__(226);
+	var defaultGhostStoreProvider = __webpack_require__(214);
+	var defaultObjectStoreProvider = __webpack_require__(225);
 	
 	var WebSocketClient;
 	if (typeof window !== 'undefined' && window.WebSocket) {
 	  WebSocketClient = window.WebSocket;
 	} else {
-	  WebSocketClient = __webpack_require__(227).w3cwebsocket;
+	  WebSocketClient = __webpack_require__(226).w3cwebsocket;
 	}
 	
 	module.exports = Client;
@@ -24345,7 +24222,7 @@
 
 
 /***/ },
-/* 200 */
+/* 199 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -24873,7 +24750,7 @@
 	}
 	exports.isPrimitive = isPrimitive;
 	
-	exports.isBuffer = __webpack_require__(201);
+	exports.isBuffer = __webpack_require__(200);
 	
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
@@ -24917,7 +24794,7 @@
 	 *     prototype.
 	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(202);
+	exports.inherits = __webpack_require__(201);
 	
 	exports._extend = function(origin, add) {
 	  // Don't do anything if add isn't an object
@@ -24938,7 +24815,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(4)))
 
 /***/ },
-/* 201 */
+/* 200 */
 /***/ function(module, exports) {
 
 	module.exports = function isBuffer(arg) {
@@ -24949,7 +24826,7 @@
 	}
 
 /***/ },
-/* 202 */
+/* 201 */
 /***/ function(module, exports) {
 
 	if (typeof Object.create === 'function') {
@@ -24978,7 +24855,7 @@
 
 
 /***/ },
-/* 203 */
+/* 202 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -25282,15 +25159,15 @@
 
 
 /***/ },
-/* 204 */
+/* 203 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var util = __webpack_require__(200);
-	var EventEmitter = __webpack_require__(203).EventEmitter;
+	var util = __webpack_require__(199);
+	var EventEmitter = __webpack_require__(202).EventEmitter;
 	var format = util.format;
-	var uuid = __webpack_require__(205);
+	var uuid = __webpack_require__(204);
 	
-	var arglock = __webpack_require__(206).arglock;
+	var arglock = __webpack_require__(205).arglock;
 	
 	module.exports = Bucket;
 	
@@ -25346,7 +25223,7 @@
 
 
 /***/ },
-/* 205 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;//     uuid.js
@@ -25599,7 +25476,7 @@
 
 
 /***/ },
-/* 206 */
+/* 205 */
 /***/ function(module, exports) {
 
 	
@@ -25678,19 +25555,19 @@
 	}
 
 /***/ },
-/* 207 */
+/* 206 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var util = __webpack_require__(200);
+	var util = __webpack_require__(199);
 	var format = util.format;
-	var EventEmitter = __webpack_require__(203).EventEmitter;
-	var simperiumUtil = __webpack_require__(208);
+	var EventEmitter = __webpack_require__(202).EventEmitter;
+	var simperiumUtil = __webpack_require__(207);
 	var arglock = simperiumUtil.fn.arglock;
 	var parseMessage = simperiumUtil.parseMessage;
 	var parseVersionMessage = simperiumUtil.parseVersionMessage;
-	var jsondiff = __webpack_require__(210)({list_diff: false});
-	var change_util = __webpack_require__(209);
-	var uuid = __webpack_require__(205);
+	var jsondiff = __webpack_require__(209)({list_diff: false});
+	var change_util = __webpack_require__(208);
+	var uuid = __webpack_require__(204);
 	
 	function log_error(e) {
 	  console.error(e);
@@ -26313,22 +26190,22 @@
 
 
 /***/ },
-/* 208 */
+/* 207 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  change: __webpack_require__(209),
-	  fn: __webpack_require__(206),
-	  parseMessage : __webpack_require__(213),
-	  parseVersionMessage: __webpack_require__(214)
+	  change: __webpack_require__(208),
+	  fn: __webpack_require__(205),
+	  parseMessage : __webpack_require__(212),
+	  parseVersionMessage: __webpack_require__(213)
 	}
 
 /***/ },
-/* 209 */
+/* 208 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var uuid = __webpack_require__(205);
-	var jsondiff = __webpack_require__(210)({list_diff: false});
+	var uuid = __webpack_require__(204);
+	var jsondiff = __webpack_require__(209)({list_diff: false});
 	
 	var changeTypes = {
 	  MODIFY: 'M',
@@ -26340,8 +26217,10 @@
 	  type: changeTypes,
 	  buildChange: buildChange,
 	  compressChanges: compressChanges,
+		diff: jsondiff.object_diff,
 	  transform: rebase,
-	  modify: modify
+	  modify: modify,
+		apply: apply_diff
 	};
 	
 	function modify(id, version, patch) {
@@ -26396,13 +26275,17 @@
 	function rebase(local_diff, remote_diff, origin) {
 	  return jsondiff.transform_object_diff(local_diff, remote_diff, origin);
 	}
+	
+	function apply_diff(patch, object) {
+		return jsondiff.apply_object_diff(object, patch);
+	}
 
 /***/ },
-/* 210 */
+/* 209 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var jsondiff = __webpack_require__(211);
-	var diff_match_patch = __webpack_require__(212);
+	var jsondiff = __webpack_require__(210);
+	var diff_match_patch = __webpack_require__(211);
 	
 	module.exports = init;
 	
@@ -26414,10 +26297,10 @@
 	}
 
 /***/ },
-/* 211 */
+/* 210 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var diff_match_patch = __webpack_require__(212);
+	var diff_match_patch = __webpack_require__(211);
 	
 	// stolen from https://raw.github.com/Simperium/jsondiff/master/src/jsondiff.js
 	(function() {
@@ -27040,7 +26923,7 @@
 	}).call();
 
 /***/ },
-/* 212 */
+/* 211 */
 /***/ function(module, exports) {
 
 	module.exports = diff_match_patch;
@@ -29240,7 +29123,7 @@
 	module.exports['DIFF_EQUAL'] = DIFF_EQUAL;
 
 /***/ },
-/* 213 */
+/* 212 */
 /***/ function(module, exports) {
 
 	module.exports = function(data){
@@ -29253,7 +29136,7 @@
 	}
 
 /***/ },
-/* 214 */
+/* 213 */
 /***/ function(module, exports) {
 
 	module.exports = function(data) {
@@ -29271,11 +29154,11 @@
 	};
 
 /***/ },
-/* 215 */
+/* 214 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var Store = __webpack_require__(216);
+	var Store = __webpack_require__(215);
 	
 	module.exports = function(bucket){
 	  return new Store(bucket);
@@ -29284,10 +29167,10 @@
 
 
 /***/ },
-/* 216 */
+/* 215 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {var Promise = __webpack_require__(217);
+	/* WEBPACK VAR INJECTION */(function(process) {var Promise = __webpack_require__(216);
 	
 	module.exports = Store;
 	
@@ -29369,12 +29252,25 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
+/* 216 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(217)
+
+
+/***/ },
 /* 217 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(218)
+	module.exports = __webpack_require__(218);
+	__webpack_require__(220);
+	__webpack_require__(221);
+	__webpack_require__(222);
+	__webpack_require__(223);
 
 
 /***/ },
@@ -29383,20 +29279,7 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(219);
-	__webpack_require__(221);
-	__webpack_require__(222);
-	__webpack_require__(223);
-	__webpack_require__(224);
-
-
-/***/ },
-/* 219 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var asap = __webpack_require__(220);
+	var asap = __webpack_require__(219);
 	
 	function noop() {}
 	
@@ -29581,7 +29464,7 @@
 
 
 /***/ },
-/* 220 */
+/* 219 */
 /***/ function(module, exports) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
@@ -29808,12 +29691,12 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 221 */
+/* 220 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var Promise = __webpack_require__(219);
+	var Promise = __webpack_require__(218);
 	
 	module.exports = Promise;
 	Promise.prototype.done = function (onFulfilled, onRejected) {
@@ -29827,12 +29710,12 @@
 
 
 /***/ },
-/* 222 */
+/* 221 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var Promise = __webpack_require__(219);
+	var Promise = __webpack_require__(218);
 	
 	module.exports = Promise;
 	Promise.prototype['finally'] = function (f) {
@@ -29849,14 +29732,14 @@
 
 
 /***/ },
-/* 223 */
+/* 222 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	//This file contains the ES6 extensions to the core Promises/A+ API
 	
-	var Promise = __webpack_require__(219);
+	var Promise = __webpack_require__(218);
 	
 	module.exports = Promise;
 	
@@ -29962,7 +29845,7 @@
 
 
 /***/ },
-/* 224 */
+/* 223 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29970,8 +29853,8 @@
 	// This file contains then/promise specific extensions that are only useful
 	// for node.js interop
 	
-	var Promise = __webpack_require__(219);
-	var asap = __webpack_require__(225);
+	var Promise = __webpack_require__(218);
+	var asap = __webpack_require__(224);
 	
 	module.exports = Promise;
 	
@@ -30039,13 +29922,13 @@
 
 
 /***/ },
-/* 225 */
+/* 224 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	// rawAsap provides everything we need except exception management.
-	var rawAsap = __webpack_require__(220);
+	var rawAsap = __webpack_require__(219);
 	// RawTasks are recycled to reduce GC churn.
 	var freeTasks = [];
 	// We queue errors to ensure they are thrown in right order (FIFO).
@@ -30111,7 +29994,7 @@
 
 
 /***/ },
-/* 226 */
+/* 225 */
 /***/ function(module, exports) {
 
 	
@@ -30147,12 +30030,12 @@
 	}
 
 /***/ },
-/* 227 */
+/* 226 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var _global = (function() { return this; })();
 	var nativeWebSocket = _global.WebSocket || _global.MozWebSocket;
-	var websocket_version = __webpack_require__(228);
+	var websocket_version = __webpack_require__(227);
 	
 	
 	/**
@@ -30189,14 +30072,14 @@
 
 
 /***/ },
-/* 228 */
+/* 227 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(229).version;
+	module.exports = __webpack_require__(228).version;
 
 
 /***/ },
-/* 229 */
+/* 228 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -30291,17 +30174,17 @@
 	};
 
 /***/ },
-/* 230 */
+/* 229 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var EventEmitter = __webpack_require__(203).EventEmitter;
-	var User = __webpack_require__(198);
-	var util = __webpack_require__(200);
+	var EventEmitter = __webpack_require__(202).EventEmitter;
+	var User = __webpack_require__(197);
+	var util = __webpack_require__(199);
 	var format = util.format;
-	var https = __webpack_require__(231);
-	var url = __webpack_require__(258);
-	var Promise = __webpack_require__(217);
-	var arglock = __webpack_require__(206).arglock;
+	var https = __webpack_require__(230);
+	var url = __webpack_require__(257);
+	var Promise = __webpack_require__(216);
+	var arglock = __webpack_require__(205).arglock;
 	
 	var URL = "https://auth.simperium.com/1";
 	
@@ -30362,10 +30245,10 @@
 	}
 
 /***/ },
-/* 231 */
+/* 230 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var http = __webpack_require__(232);
+	var http = __webpack_require__(231);
 	
 	var https = module.exports;
 	
@@ -30381,13 +30264,13 @@
 
 
 /***/ },
-/* 232 */
+/* 231 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var http = module.exports;
-	var EventEmitter = __webpack_require__(203).EventEmitter;
-	var Request = __webpack_require__(233);
-	var url = __webpack_require__(258)
+	var EventEmitter = __webpack_require__(202).EventEmitter;
+	var Request = __webpack_require__(232);
+	var url = __webpack_require__(257)
 	
 	http.request = function (params, cb) {
 	    if (typeof params === 'string') {
@@ -30531,13 +30414,13 @@
 	};
 
 /***/ },
-/* 233 */
+/* 232 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Stream = __webpack_require__(234);
-	var Response = __webpack_require__(255);
-	var Base64 = __webpack_require__(256);
-	var inherits = __webpack_require__(257);
+	var Stream = __webpack_require__(233);
+	var Response = __webpack_require__(254);
+	var Base64 = __webpack_require__(255);
+	var inherits = __webpack_require__(256);
 	
 	var Request = module.exports = function (xhr, params) {
 	    var self = this;
@@ -30746,7 +30629,7 @@
 
 
 /***/ },
-/* 234 */
+/* 233 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -30772,15 +30655,15 @@
 	
 	module.exports = Stream;
 	
-	var EE = __webpack_require__(203).EventEmitter;
-	var inherits = __webpack_require__(235);
+	var EE = __webpack_require__(202).EventEmitter;
+	var inherits = __webpack_require__(234);
 	
 	inherits(Stream, EE);
-	Stream.Readable = __webpack_require__(236);
-	Stream.Writable = __webpack_require__(251);
-	Stream.Duplex = __webpack_require__(252);
-	Stream.Transform = __webpack_require__(253);
-	Stream.PassThrough = __webpack_require__(254);
+	Stream.Readable = __webpack_require__(235);
+	Stream.Writable = __webpack_require__(250);
+	Stream.Duplex = __webpack_require__(251);
+	Stream.Transform = __webpack_require__(252);
+	Stream.PassThrough = __webpack_require__(253);
 	
 	// Backwards-compat with node 0.4.x
 	Stream.Stream = Stream;
@@ -30879,7 +30762,7 @@
 
 
 /***/ },
-/* 235 */
+/* 234 */
 /***/ function(module, exports) {
 
 	if (typeof Object.create === 'function') {
@@ -30908,20 +30791,20 @@
 
 
 /***/ },
-/* 236 */
+/* 235 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(237);
-	exports.Stream = __webpack_require__(234);
+	exports = module.exports = __webpack_require__(236);
+	exports.Stream = __webpack_require__(233);
 	exports.Readable = exports;
-	exports.Writable = __webpack_require__(247);
-	exports.Duplex = __webpack_require__(246);
-	exports.Transform = __webpack_require__(249);
-	exports.PassThrough = __webpack_require__(250);
+	exports.Writable = __webpack_require__(246);
+	exports.Duplex = __webpack_require__(245);
+	exports.Transform = __webpack_require__(248);
+	exports.PassThrough = __webpack_require__(249);
 
 
 /***/ },
-/* 237 */
+/* 236 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -30948,17 +30831,17 @@
 	module.exports = Readable;
 	
 	/*<replacement>*/
-	var isArray = __webpack_require__(238);
+	var isArray = __webpack_require__(237);
 	/*</replacement>*/
 	
 	
 	/*<replacement>*/
-	var Buffer = __webpack_require__(239).Buffer;
+	var Buffer = __webpack_require__(238).Buffer;
 	/*</replacement>*/
 	
 	Readable.ReadableState = ReadableState;
 	
-	var EE = __webpack_require__(203).EventEmitter;
+	var EE = __webpack_require__(202).EventEmitter;
 	
 	/*<replacement>*/
 	if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -30966,18 +30849,18 @@
 	};
 	/*</replacement>*/
 	
-	var Stream = __webpack_require__(234);
+	var Stream = __webpack_require__(233);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(243);
-	util.inherits = __webpack_require__(244);
+	var util = __webpack_require__(242);
+	util.inherits = __webpack_require__(243);
 	/*</replacement>*/
 	
 	var StringDecoder;
 	
 	
 	/*<replacement>*/
-	var debug = __webpack_require__(245);
+	var debug = __webpack_require__(244);
 	if (debug && debug.debuglog) {
 	  debug = debug.debuglog('stream');
 	} else {
@@ -30989,7 +30872,7 @@
 	util.inherits(Readable, Stream);
 	
 	function ReadableState(options, stream) {
-	  var Duplex = __webpack_require__(246);
+	  var Duplex = __webpack_require__(245);
 	
 	  options = options || {};
 	
@@ -31050,14 +30933,14 @@
 	  this.encoding = null;
 	  if (options.encoding) {
 	    if (!StringDecoder)
-	      StringDecoder = __webpack_require__(248).StringDecoder;
+	      StringDecoder = __webpack_require__(247).StringDecoder;
 	    this.decoder = new StringDecoder(options.encoding);
 	    this.encoding = options.encoding;
 	  }
 	}
 	
 	function Readable(options) {
-	  var Duplex = __webpack_require__(246);
+	  var Duplex = __webpack_require__(245);
 	
 	  if (!(this instanceof Readable))
 	    return new Readable(options);
@@ -31160,7 +31043,7 @@
 	// backwards compatibility.
 	Readable.prototype.setEncoding = function(enc) {
 	  if (!StringDecoder)
-	    StringDecoder = __webpack_require__(248).StringDecoder;
+	    StringDecoder = __webpack_require__(247).StringDecoder;
 	  this._readableState.decoder = new StringDecoder(enc);
 	  this._readableState.encoding = enc;
 	  return this;
@@ -31879,7 +31762,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 238 */
+/* 237 */
 /***/ function(module, exports) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -31888,7 +31771,7 @@
 
 
 /***/ },
-/* 239 */
+/* 238 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -31899,9 +31782,9 @@
 	 */
 	/* eslint-disable no-proto */
 	
-	var base64 = __webpack_require__(240)
-	var ieee754 = __webpack_require__(241)
-	var isArray = __webpack_require__(242)
+	var base64 = __webpack_require__(239)
+	var ieee754 = __webpack_require__(240)
+	var isArray = __webpack_require__(241)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -33436,10 +33319,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(239).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(238).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 240 */
+/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -33569,7 +33452,7 @@
 
 
 /***/ },
-/* 241 */
+/* 240 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -33659,7 +33542,7 @@
 
 
 /***/ },
-/* 242 */
+/* 241 */
 /***/ function(module, exports) {
 
 	
@@ -33698,7 +33581,7 @@
 
 
 /***/ },
-/* 243 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -33808,10 +33691,10 @@
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
 	}
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(239).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(238).Buffer))
 
 /***/ },
-/* 244 */
+/* 243 */
 /***/ function(module, exports) {
 
 	if (typeof Object.create === 'function') {
@@ -33840,13 +33723,13 @@
 
 
 /***/ },
-/* 245 */
+/* 244 */
 /***/ function(module, exports) {
 
 	/* (ignored) */
 
 /***/ },
-/* 246 */
+/* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -33887,12 +33770,12 @@
 	
 	
 	/*<replacement>*/
-	var util = __webpack_require__(243);
-	util.inherits = __webpack_require__(244);
+	var util = __webpack_require__(242);
+	util.inherits = __webpack_require__(243);
 	/*</replacement>*/
 	
-	var Readable = __webpack_require__(237);
-	var Writable = __webpack_require__(247);
+	var Readable = __webpack_require__(236);
+	var Writable = __webpack_require__(246);
 	
 	util.inherits(Duplex, Readable);
 	
@@ -33942,7 +33825,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 247 */
+/* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -33973,18 +33856,18 @@
 	module.exports = Writable;
 	
 	/*<replacement>*/
-	var Buffer = __webpack_require__(239).Buffer;
+	var Buffer = __webpack_require__(238).Buffer;
 	/*</replacement>*/
 	
 	Writable.WritableState = WritableState;
 	
 	
 	/*<replacement>*/
-	var util = __webpack_require__(243);
-	util.inherits = __webpack_require__(244);
+	var util = __webpack_require__(242);
+	util.inherits = __webpack_require__(243);
 	/*</replacement>*/
 	
-	var Stream = __webpack_require__(234);
+	var Stream = __webpack_require__(233);
 	
 	util.inherits(Writable, Stream);
 	
@@ -33995,7 +33878,7 @@
 	}
 	
 	function WritableState(options, stream) {
-	  var Duplex = __webpack_require__(246);
+	  var Duplex = __webpack_require__(245);
 	
 	  options = options || {};
 	
@@ -34083,7 +33966,7 @@
 	}
 	
 	function Writable(options) {
-	  var Duplex = __webpack_require__(246);
+	  var Duplex = __webpack_require__(245);
 	
 	  // Writable ctor is applied to Duplexes, though they're not
 	  // instanceof Writable, they're instanceof Readable.
@@ -34426,7 +34309,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 248 */
+/* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -34450,7 +34333,7 @@
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 	
-	var Buffer = __webpack_require__(239).Buffer;
+	var Buffer = __webpack_require__(238).Buffer;
 	
 	var isBufferEncoding = Buffer.isEncoding
 	  || function(encoding) {
@@ -34653,7 +34536,7 @@
 
 
 /***/ },
-/* 249 */
+/* 248 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -34722,11 +34605,11 @@
 	
 	module.exports = Transform;
 	
-	var Duplex = __webpack_require__(246);
+	var Duplex = __webpack_require__(245);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(243);
-	util.inherits = __webpack_require__(244);
+	var util = __webpack_require__(242);
+	util.inherits = __webpack_require__(243);
 	/*</replacement>*/
 	
 	util.inherits(Transform, Duplex);
@@ -34868,7 +34751,7 @@
 
 
 /***/ },
-/* 250 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -34898,11 +34781,11 @@
 	
 	module.exports = PassThrough;
 	
-	var Transform = __webpack_require__(249);
+	var Transform = __webpack_require__(248);
 	
 	/*<replacement>*/
-	var util = __webpack_require__(243);
-	util.inherits = __webpack_require__(244);
+	var util = __webpack_require__(242);
+	util.inherits = __webpack_require__(243);
 	/*</replacement>*/
 	
 	util.inherits(PassThrough, Transform);
@@ -34920,17 +34803,24 @@
 
 
 /***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(246)
+
+
+/***/ },
 /* 251 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(247)
+	module.exports = __webpack_require__(245)
 
 
 /***/ },
 /* 252 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(246)
+	module.exports = __webpack_require__(248)
 
 
 /***/ },
@@ -34944,15 +34834,8 @@
 /* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(250)
-
-
-/***/ },
-/* 255 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Stream = __webpack_require__(234);
-	var util = __webpack_require__(200);
+	var Stream = __webpack_require__(233);
+	var util = __webpack_require__(199);
 	
 	var Response = module.exports = function (res) {
 	    this.offset = 0;
@@ -35074,7 +34957,7 @@
 
 
 /***/ },
-/* 256 */
+/* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
 	;(function () {
@@ -35140,7 +35023,7 @@
 
 
 /***/ },
-/* 257 */
+/* 256 */
 /***/ function(module, exports) {
 
 	if (typeof Object.create === 'function') {
@@ -35169,7 +35052,7 @@
 
 
 /***/ },
-/* 258 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -35193,7 +35076,7 @@
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 	
-	var punycode = __webpack_require__(259);
+	var punycode = __webpack_require__(258);
 	
 	exports.parse = urlParse;
 	exports.resolve = urlResolve;
@@ -35265,7 +35148,7 @@
 	      'gopher:': true,
 	      'file:': true
 	    },
-	    querystring = __webpack_require__(261);
+	    querystring = __webpack_require__(260);
 	
 	function urlParse(url, parseQueryString, slashesDenoteHost) {
 	  if (url && isObject(url) && url instanceof Url) return url;
@@ -35882,7 +35765,7 @@
 
 
 /***/ },
-/* 259 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/*! https://mths.be/punycode v1.3.2 by @mathias */
@@ -36414,10 +36297,10 @@
 	
 	}(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(260)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(259)(module), (function() { return this; }())))
 
 /***/ },
-/* 260 */
+/* 259 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -36433,17 +36316,17 @@
 
 
 /***/ },
-/* 261 */
+/* 260 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	exports.decode = exports.parse = __webpack_require__(262);
-	exports.encode = exports.stringify = __webpack_require__(263);
+	exports.decode = exports.parse = __webpack_require__(261);
+	exports.encode = exports.stringify = __webpack_require__(262);
 
 
 /***/ },
-/* 262 */
+/* 261 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -36529,7 +36412,7 @@
 
 
 /***/ },
-/* 263 */
+/* 262 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -36599,12 +36482,143 @@
 
 
 /***/ },
+/* 263 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
+	
+	var simperium = __webpack_require__(196),
+	    bucket_store = __webpack_require__(264),
+	    ghost_store = __webpack_require__(265),
+	    util = __webpack_require__(199),
+	    events = __webpack_require__(202),
+	    Bucket = simperium.Client.Bucket;
+	
+	module.exports = function (appID, token, bucketConfig, database, version) {
+	  return new BrowserClient(appID, token, bucketConfig, database, version);
+	};
+	
+	module.exports.Auth = simperium.Auth;
+	
+	Bucket.prototype.query = function (fn) {
+	  this.store.setup.then(fn);
+	};
+	
+	function BrowserClient(appID, token, bucketConfig, database, version) {
+	  this.databaseName = database || "simperium-objects";
+	  this.databaseVersion = version || 1;
+	  var config = this.bucketConfig = bucketConfig;
+	  this.bucketDB = bucket_store(this.configureDb.bind(this));
+	  this.buckets = {};
+	
+	  var _objectStoreProvider = this.bucketDB.provider();
+	  this.ghostStore = ghost_store;
+	
+	  this.client = simperium(appID, token, {
+	    ghostStoreProvider: ghost_store,
+	    objectStoreProvider: function objectStoreProvider(bucket) {
+	      var store = _objectStoreProvider.apply(null, arguments);
+	      if (config[bucket.name].beforeIndex) {
+	        store.beforeIndex = config[bucket.name].beforeIndex;
+	      }
+	      return store;
+	    }
+	  });
+	
+	  ['send', 'message', 'connect', 'reconnect', 'disconnect', 'unauthorized'].forEach((function (event) {
+	    this.client.on(event, (function () {
+	      var args = [].slice.call(arguments);
+	      this.emit.apply(this, [event].concat(args));
+	    }).bind(this));
+	  }).bind(this));
+	
+	  for (var bucket in bucketConfig) {
+	    this.buckets[bucket] = this.client.bucket(bucket);
+	  }
+	}
+	
+	util.inherits(BrowserClient, events.EventEmitter);
+	
+	BrowserClient.prototype.configureDb = function (resolve, reject) {
+	
+	  var openRequest = window.indexedDB.open(this.databaseName, this.databaseVersion);
+	  var upgraded = false;
+	  var buckets = this.buckets;
+	
+	  openRequest.onupgradeneeded = (function (e) {
+	    upgraded = true;
+	    var db = e.target.result;
+	
+	    var stores = db.objectStoreNames;
+	    var objectStore;
+	
+	    for (var name in this.bucketConfig) {
+	      var setup = this.bucketConfig[name];
+	      if (typeof setup !== 'function') {
+	        setup = setup.configure;
+	      }
+	      if (stores.contains(name)) db.deleteObjectStore(name);
+	      objectStore = db.createObjectStore(name, { keyPath: 'id' });
+	      setup(objectStore);
+	    }
+	  }).bind(this);
+	
+	  openRequest.onerror = function (e) {
+	    console.log("So failed", e);
+	  };
+	
+	  openRequest.onsuccess = (function (e) {
+	    // if we upgraded we want to refresh object stores with the ghost stores
+	    global.bucketDB = e.target.result;
+	    resolve(e.target.result);
+	
+	    if (!upgraded) return;
+	
+	    // reload buckets
+	    for (var name in this.buckets) {
+	      this.buckets[name].reload();
+	    }
+	  }).bind(this);
+	};
+	
+	BrowserClient.prototype.isAuthorized = function () {
+	  return !!this.client.accessToken;
+	};
+	
+	BrowserClient.prototype.reset = function () {
+	  // loop through each known bucket and generate a promise to reset the bucket
+	  return this.bucketDB.reset().then(function () {
+	    return ghost_store.reset();
+	  }, function (e) {
+	    console.error("Failed to reset", e);
+	  });
+	};
+	
+	BrowserClient.prototype.bucket = function (name) {
+	  return this.buckets[name];
+	};
+	
+	BrowserClient.prototype.setUser = function (user) {
+	  // todo, set the user access token and have the buckets reconnect
+	  this.client.setAccessToken(user.access_token);
+	  this.emit('authorized');
+	};
+	
+	BrowserClient.prototype.deauthorize = function () {
+	  this.client.setAccessToken(null);
+	  this.emit('unauthorized');
+	  this.client.disconnect();
+	  this.reset();
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
 /* 264 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var Promise = __webpack_require__(217);
+	var Promise = __webpack_require__(216);
 	
 	module.exports = function (configure) {
 	  return new StoreProvider(configure);
@@ -36724,7 +36738,7 @@
 
 	'use strict';
 	
-	var Promise = __webpack_require__(217);
+	var Promise = __webpack_require__(216);
 	
 	var db = window.indexedDB,
 	    setup = new Promise(function (resolve, reject) {
