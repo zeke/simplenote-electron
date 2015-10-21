@@ -20528,335 +20528,335 @@
 	var simperium = __webpack_require__(196);
 	
 	module.exports = React.createClass({
-	  displayName: 'exports',
+		displayName: 'exports',
 	
-	  mixins: [NoteDisplayMixin],
+		mixins: [NoteDisplayMixin],
 	
-	  getDefaultProps: function getDefaultProps() {
-	    return {
-	      onAuthenticate: function onAuthenticate() {},
-	      onSignOut: function onSignOut() {}
-	    };
-	  },
+		getDefaultProps: function getDefaultProps() {
+			return {
+				onAuthenticate: function onAuthenticate() {},
+				onSignOut: function onSignOut() {}
+			};
+		},
 	
-	  getInitialState: function getInitialState() {
-	    return {
-	      note_id: null,
-	      notes: [],
-	      tags: [],
-	      showTrash: false,
-	      listTitle: "All Notes",
-	      authorized: this.props.client.isAuthorized()
-	    };
-	  },
+		getInitialState: function getInitialState() {
+			return {
+				note_id: null,
+				notes: [],
+				tags: [],
+				showTrash: false,
+				listTitle: "All Notes",
+				authorized: this.props.client.isAuthorized()
+			};
+		},
 	
-	  componentDidMount: function componentDidMount() {
+		componentDidMount: function componentDidMount() {
 	
-	    window.addEventListener('popstate', this._onPopState);
+			window.addEventListener('popstate', this._onPopState);
 	
-	    this.props.notes.on('index', this.onNotesIndex).on('update', this.onNoteUpdate).on('remove', this.onNoteRemoved);
+			this.props.notes.on('index', this.onNotesIndex).on('update', this.onNoteUpdate).on('remove', this.onNoteRemoved);
 	
-	    this.props.tags.on('index', this.onTagsIndex).on('update', this.onTagsIndex);
+			this.props.tags.on('index', this.onTagsIndex).on('update', this.onTagsIndex);
 	
-	    this.props.client.on('authorized', this.onAuthChanged).on('unauthorized', this.onAuthChanged);
+			this.props.client.on('authorized', this.onAuthChanged).on('unauthorized', this.onAuthChanged);
 	
-	    this.onNotesIndex();
-	  },
+			this.onNotesIndex();
+		},
 	
-	  _onPopState: function _onPopState(event) {
-	    var state = event.state;
-	    if (state) {
-	      this.props.notes.get(state.id, this._onGetNote);
-	    } else {
-	      this.setState({ note: null });
-	    }
-	  },
+		_onPopState: function _onPopState(event) {
+			var state = event.state;
+			if (state) {
+				this.props.notes.get(state.id, this._onGetNote);
+			} else {
+				this.setState({ note: null });
+			}
+		},
 	
-	  _onAddNote: function _onAddNote(e, note) {
-	    this.onNotesIndex();
-	    this.onSelectNote(note.id);
-	  },
+		_onAddNote: function _onAddNote(e, note) {
+			this.onNotesIndex();
+			this.onSelectNote(note.id);
+		},
 	
-	  _onGetNote: function _onGetNote(e, note) {
-	    this.setState({ note: note, note_id: note.id, revisions: null });
-	  },
+		_onGetNote: function _onGetNote(e, note) {
+			this.setState({ note: note, note_id: note.id, revisions: null });
+		},
 	
-	  _closeNote: function _closeNote() {
-	    // this.replaceState(null, "Simplenote", "/");
-	    this.setState({ note: null, note_id: null });
-	  },
+		_closeNote: function _closeNote() {
+			// this.replaceState(null, "Simplenote", "/");
+			this.setState({ note: null, note_id: null });
+		},
 	
-	  onAuthChanged: function onAuthChanged() {
-	    var authorized = this.props.client.isAuthorized();
-	    this.setState({ authorized: authorized });
-	    if (!authorized) {
-	      this.setState({ notes: [], tags: [] });
-	    }
-	  },
+		onAuthChanged: function onAuthChanged() {
+			var authorized = this.props.client.isAuthorized();
+			this.setState({ authorized: authorized });
+			if (!authorized) {
+				this.setState({ notes: [], tags: [] });
+			}
+		},
 	
-	  onSelectNote: function onSelectNote(note_id) {
-	    this.props.notes.get(note_id, this._onGetNote);
-	  },
+		onSelectNote: function onSelectNote(note_id) {
+			this.props.notes.get(note_id, this._onGetNote);
+		},
 	
-	  onNotesIndex: function onNotesIndex() {
-	    var done = this.onFindNotes;
-	    this.props.notes.query(function (db) {
-	      var notes = [];
-	      db.transaction('note').objectStore('note').index('pinned-sort').openCursor(null, 'prev').onsuccess = function (e) {
-	        var cursor = e.target.result;
-	        if (cursor) {
-	          notes.push(cursor.value);
-	          cursor['continue']();
-	        } else {
-	          done(null, notes);
-	        }
-	      };
-	    });
-	  },
+		onNotesIndex: function onNotesIndex() {
+			var done = this.onFindNotes;
+			this.props.notes.query(function (db) {
+				var notes = [];
+				db.transaction('note').objectStore('note').index('pinned-sort').openCursor(null, 'prev').onsuccess = function (e) {
+					var cursor = e.target.result;
+					if (cursor) {
+						notes.push(cursor.value);
+						cursor['continue']();
+					} else {
+						done(null, notes);
+					}
+				};
+			});
+		},
 	
-	  onNoteRemoved: function onNoteRemoved() {
-	    this.onNotesIndex();
-	  },
+		onNoteRemoved: function onNoteRemoved() {
+			this.onNotesIndex();
+		},
 	
-	  onNewNote: function onNewNote() {
-	    // insert a new note into the store and select it
-	    var ts = new Date().getTime() / 1000;
-	    this.props.notes.add({
-	      content: "",
-	      deleted: false,
-	      systemTags: [],
-	      creationDate: ts,
-	      modificationDate: ts,
-	      shareURL: "",
-	      publishURL: "",
-	      tags: []
-	    }, this._onAddNote);
-	  },
+		onNewNote: function onNewNote() {
+			// insert a new note into the store and select it
+			var ts = new Date().getTime() / 1000;
+			this.props.notes.add({
+				content: "",
+				deleted: false,
+				systemTags: [],
+				creationDate: ts,
+				modificationDate: ts,
+				shareURL: "",
+				publishURL: "",
+				tags: []
+			}, this._onAddNote);
+		},
 	
-	  onNoteUpdate: function onNoteUpdate(id, data, original, patch) {
+		onNoteUpdate: function onNoteUpdate(id, data, original, patch) {
 	
-	    // refresh the notes list
-	    this.onNotesIndex();
+			// refresh the notes list
+			this.onNotesIndex();
 	
-	    if (this.state.note_id == id && !!patch) {
+			if (this.state.note_id == id && !!patch) {
 	
-	      // working is the state of the note in the editor
-	      var working = this.state.note.data;
+				// working is the state of the note in the editor
+				var working = this.state.note.data;
 	
-	      // diff of working and original will produce the modifications the client has currently made
-	      var working_diff = simperium.util.change.diff(original, working);
-	      // generate a patch that composes both the working changes and upstream changes
-	      var patch = simperium.util.change.transform(working_diff, patch, original);
-	      // apply the new patch to the upstream data
-	      var rebased = simperium.util.change.apply(patch, data);
+				// diff of working and original will produce the modifications the client has currently made
+				var working_diff = simperium.util.change.diff(original, working);
+				// generate a patch that composes both the working changes and upstream changes
+				var patch = simperium.util.change.transform(working_diff, patch, original);
+				// apply the new patch to the upstream data
+				var rebased = simperium.util.change.apply(patch, data);
 	
-	      // TODO: determine where the cursor is and put it in the correct place
-	      // when applying the rebased content
+				// TODO: determine where the cursor is and put it in the correct place
+				// when applying the rebased content
 	
-	      this.state.note.data = rebased;
+				this.state.note.data = rebased;
 	
-	      // immediately save the content
-	      this.setState({ note: this.state.note });
+				// immediately save the content
+				this.setState({ note: this.state.note });
 	
-	      var notes = this.props.notes,
-	          note = this.state.note;
-	      this.onUpdateContent(note, note.data.content);
-	    }
-	  },
+				var notes = this.props.notes,
+				    note = this.state.note;
+				this.onUpdateContent(note, note.data.content);
+			}
+		},
 	
-	  onFindNotes: function onFindNotes(e, notes) {
-	    this.setState({ notes: notes });
-	  },
+		onFindNotes: function onFindNotes(e, notes) {
+			this.setState({ notes: notes });
+		},
 	
-	  onTagsIndex: function onTagsIndex() {},
+		onTagsIndex: function onTagsIndex() {},
 	
-	  onClickTagFilter: function onClickTagFilter(tag) {
-	    console.log("Filter", tag);
-	  },
+		onClickTagFilter: function onClickTagFilter(tag) {
+			console.log("Filter", tag);
+		},
 	
-	  onSearch: function onSearch(v) {
-	    this.setState({ filter: v });
-	  },
+		onSearch: function onSearch(v) {
+			this.setState({ filter: v });
+		},
 	
-	  filterNotes: function filterNotes() {
-	    var query = this.state.filter,
-	        trash = this.state.showTrash,
-	        notes = this.state.notes || [],
-	        filter = function filter(note) {
-	      return trash || !note.data.deleted;
-	    };
+		filterNotes: function filterNotes() {
+			var query = this.state.filter,
+			    trash = this.state.showTrash,
+			    notes = this.state.notes || [],
+			    filter = function filter(note) {
+				return trash || !note.data.deleted;
+			};
 	
-	    if (query) {
-	      var reg = new RegExp(query, 'gi');
-	      filter = and(filter, function (note) {
-	        if (note.data && note.data.content) return reg.test(note.data.content);
-	        return false;
-	      });
-	    }
+			if (query) {
+				var reg = new RegExp(query, 'gi');
+				filter = and(filter, function (note) {
+					if (note.data && note.data.content) return reg.test(note.data.content);
+					return false;
+				});
+			}
 	
-	    return notes.filter(filter);
-	  },
+			return notes.filter(filter);
+		},
 	
-	  onUpdateContent: function onUpdateContent(note, content) {
-	    if (note) {
-	      note.data.content = content;
-	      this.setState({ note_id: note.id });
+		onUpdateContent: function onUpdateContent(note, content) {
+			if (note) {
+				note.data.content = content;
+				this.setState({ note_id: note.id });
 	
-	      // update the bucket but don't fire a sync immediately
-	      this.props.notes.update(note.id, note.data, { sync: false });
-	      var commit = (function () {
-	        this.props.notes.touch(note.id);
-	      }).bind(this);
+				// update the bucket but don't fire a sync immediately
+				this.props.notes.update(note.id, note.data, { sync: false });
+				var commit = (function () {
+					this.props.notes.touch(note.id);
+				}).bind(this);
 	
-	      throttle(note.id, commit);
-	    }
-	  },
+				throttle(note.id, commit);
+			}
+		},
 	
-	  onUpdateTags: function onUpdateTags(note, tags) {
-	    if (note) {
-	      note.data.tags = tags;
-	      this.props.notes.update(note.id, note.data);
-	      this.setState({ note_id: note.id });
-	    }
-	  },
+		onUpdateTags: function onUpdateTags(note, tags) {
+			if (note) {
+				note.data.tags = tags;
+				this.props.notes.update(note.id, note.data);
+				this.setState({ note_id: note.id });
+			}
+		},
 	
-	  onTrashNote: function onTrashNote(note) {
-	    if (note) {
-	      note.data.deleted = true;
-	      this.props.notes.update(note.id, note.data);
-	      this.setState({ note_id: null });
-	    }
-	  },
+		onTrashNote: function onTrashNote(note) {
+			if (note) {
+				note.data.deleted = true;
+				this.props.notes.update(note.id, note.data);
+				this.setState({ note_id: null });
+			}
+		},
 	
-	  onRestoreNote: function onRestoreNote(note) {
-	    if (note) {
-	      note.data.deleted = false;
-	      this.props.notes.update(note.id, note.data);
-	      this.setState({ note_id: null });
-	    }
-	  },
+		onRestoreNote: function onRestoreNote(note) {
+			if (note) {
+				note.data.deleted = false;
+				this.props.notes.update(note.id, note.data);
+				this.setState({ note_id: null });
+			}
+		},
 	
-	  onRevisions: function onRevisions(note) {
-	    this.props.notes.getRevisions(note.id, this._loadRevisions);
-	  },
+		onRevisions: function onRevisions(note) {
+			this.props.notes.getRevisions(note.id, this._loadRevisions);
+		},
 	
-	  _loadRevisions: function _loadRevisions(e, revisions) {
-	    if (e) return console.warn("Failed to load revisions", e);
-	    this.setState({ revisions: revisions });
-	  },
+		_loadRevisions: function _loadRevisions(e, revisions) {
+			if (e) return console.warn("Failed to load revisions", e);
+			this.setState({ revisions: revisions });
+		},
 	
-	  authorized: function authorized(fn) {
-	    if (this.state.authorized) return fn();
-	  },
+		authorized: function authorized(fn) {
+			if (this.state.authorized) return fn();
+		},
 	
-	  unauthorized: function unauthorized(fn) {
-	    if (!this.state.authorized) return fn();
-	  },
+		unauthorized: function unauthorized(fn) {
+			if (!this.state.authorized) return fn();
+		},
 	
-	  render: function render() {
-	    var _this = this;
+		render: function render() {
+			var _this = this;
 	
-	    var notes = this.filterNotes();
-	    var tags = this.tag;
-	    var note = this.state.note;
-	    var revisions = this.state.revisions;
+			var notes = this.filterNotes();
+			var tags = this.tag;
+			var note = this.state.note;
+			var revisions = this.state.revisions;
 	
-	    var classes = classNames('simplenote-app', {
-	      'note-open': this.state.note
-	    });
+			var classes = classNames('simplenote-app', {
+				'note-open': this.state.note
+			});
 	
-	    return React.createElement(
-	      'div',
-	      { className: 'app' },
-	      this.authorized(function () {
-	        return React.createElement(
-	          'div',
-	          { className: classes },
-	          React.createElement(
-	            'div',
-	            { className: 'source-list' },
-	            React.createElement(
-	              'div',
-	              { className: 'toolbar' },
-	              React.createElement(
-	                NavigationBar,
-	                { title: _this.state.listTitle },
-	                React.createElement(
-	                  'div',
-	                  { className: 'button', tabIndex: '-1', onClick: _this.onNewNote },
-	                  React.createElement(PlusIcon, null)
-	                )
-	              )
-	            ),
-	            React.createElement(
-	              'div',
-	              { className: 'toolbar-compact' },
-	              React.createElement(SearchField, { onSearch: _this.onSearch })
-	            ),
-	            React.createElement(
-	              'div',
-	              { className: 'panel' },
-	              React.createElement(NoteList, { ref: 'list', notes: notes, onSelectNote: _this.onSelectNote, note: note })
-	            )
-	          ),
-	          React.createElement(NoteEditor, {
-	            note: note,
-	            revisions: _this.state.revisions,
-	            onSignOut: _this.props.onSignOut,
-	            onUpdateContent: _this.onUpdateContent,
-	            onUpdateTags: _this.onUpdateTags,
-	            onTrashNote: _this.onTrashNote,
-	            onRestoreNote: _this.onRestoreNote,
-	            onRevisions: _this.onRevisions,
-	            onCloseNote: _this._closeNote })
-	        );
-	      }),
-	      this.unauthorized(function () {
-	        return React.createElement(Auth, { onAuthenticate: _this.props.onAuthenticate });
-	      })
-	    );
-	  }
+			return React.createElement(
+				'div',
+				{ className: 'app' },
+				this.authorized(function () {
+					return React.createElement(
+						'div',
+						{ className: classes },
+						React.createElement(
+							'div',
+							{ className: 'source-list' },
+							React.createElement(
+								'div',
+								{ className: 'toolbar' },
+								React.createElement(
+									NavigationBar,
+									{ title: _this.state.listTitle },
+									React.createElement(
+										'div',
+										{ className: 'button', tabIndex: '-1', onClick: _this.onNewNote },
+										React.createElement(PlusIcon, null)
+									)
+								)
+							),
+							React.createElement(
+								'div',
+								{ className: 'toolbar-compact' },
+								React.createElement(SearchField, { onSearch: _this.onSearch })
+							),
+							React.createElement(
+								'div',
+								{ className: 'panel' },
+								React.createElement(NoteList, { ref: 'list', notes: notes, onSelectNote: _this.onSelectNote, note: note })
+							)
+						),
+						React.createElement(NoteEditor, {
+							note: note,
+							revisions: _this.state.revisions,
+							onSignOut: _this.props.onSignOut,
+							onUpdateContent: _this.onUpdateContent,
+							onUpdateTags: _this.onUpdateTags,
+							onTrashNote: _this.onTrashNote,
+							onRestoreNote: _this.onRestoreNote,
+							onRevisions: _this.onRevisions,
+							onCloseNote: _this._closeNote })
+					);
+				}),
+				this.unauthorized(function () {
+					return React.createElement(Auth, { onAuthenticate: _this.props.onAuthenticate });
+				})
+			);
+		}
 	});
 	
 	var timers = {};
 	
 	function timer(id) {
-	  var t = timers[id];
-	  if (!t) timers[id] = { start: new Date().getTime(), id: -1 };
-	  return timers[id];
+		var t = timers[id];
+		if (!t) timers[id] = { start: new Date().getTime(), id: -1 };
+		return timers[id];
 	};
 	
 	function clearTimer(id) {
-	  delete timers[id];
+		delete timers[id];
 	}
 	
 	var maxTime = 3000;
 	
 	function throttle(id, cb) {
-	  var t = timer(id),
-	      now = new Date().getTime(),
-	      ellapsed = now - t.start,
-	      perform = function perform() {
-	    var t = timer(id),
-	        now = new Date().getTime(),
-	        ellapsed = now - t.start;
+		var t = timer(id),
+		    now = new Date().getTime(),
+		    ellapsed = now - t.start,
+		    perform = function perform() {
+			var t = timer(id),
+			    now = new Date().getTime(),
+			    ellapsed = now - t.start;
 	
-	    cb();
-	    clearTimer(id);
-	  };
+			cb();
+			clearTimer(id);
+		};
 	
-	  clearTimeout(timer.id);
+		clearTimeout(timer.id);
 	
-	  if (ellapsed > maxTime) return perform();
+		if (ellapsed > maxTime) return perform();
 	
-	  timer.id = setTimeout(perform, maxTime);
+		timer.id = setTimeout(perform, maxTime);
 	}
 	
 	function and(fn, fn2) {
-	  return function (o) {
-	    if (!fn(o)) return false;
-	    return fn2(o);
-	  };
+		return function (o) {
+			if (!fn(o)) return false;
+			return fn2(o);
+		};
 	}
 
 /***/ },
@@ -36620,115 +36620,115 @@
 	var Promise = __webpack_require__(216);
 	
 	module.exports = function (configure) {
-	  return new StoreProvider(configure);
+		return new StoreProvider(configure);
 	};
 	
 	function StoreProvider(configure) {
-	  var setup = this.setup = new Promise(function (resolve, reject) {
-	    configure(resolve, reject);
-	  });
+		var setup = this.setup = new Promise(function (resolve, reject) {
+			configure(resolve, reject);
+		});
 	}
 	
 	StoreProvider.prototype.provider = function () {
-	  var setup = this.setup;
-	  return function (bucket) {
-	    return new BucketStore(bucket, setup);
-	  };
+		var setup = this.setup;
+		return function (bucket) {
+			return new BucketStore(bucket, setup);
+		};
 	};
 	
 	StoreProvider.prototype.reset = function () {
-	  return this.setup.then(function (db) {
-	    var ops = [].map.call(db.objectStoreNames, function (name) {
-	      return new Promise(function (resolve, reject) {
-	        var tx = db.transaction(name, 'readwrite');
-	        var request = tx.objectStore(name).clear();
-	        request.onsuccess = function (e) {
-	          resolve(name);
-	        };
-	        request.onerror = function (e) {
-	          reject(e);
-	        };
-	      });
-	    });
-	    return Promise.all(ops);
-	  }, function (e) {
-	    console.error("Failed to reset stores", e);
-	  });
+		return this.setup.then(function (db) {
+			var ops = [].map.call(db.objectStoreNames, function (name) {
+				return new Promise(function (resolve, reject) {
+					var tx = db.transaction(name, 'readwrite');
+					var request = tx.objectStore(name).clear();
+					request.onsuccess = function (e) {
+						resolve(name);
+					};
+					request.onerror = function (e) {
+						reject(e);
+					};
+				});
+			});
+			return Promise.all(ops);
+		}, function (e) {
+			console.error("Failed to reset stores", e);
+		});
 	};
 	
 	function BucketStore(bucket, setup) {
-	  this.bucket = bucket;
-	  this.setup = setup;
+		this.bucket = bucket;
+		this.setup = setup;
 	}
 	
 	BucketStore.prototype.withBucket = function (cb) {
-	  var bucket = this.bucket,
-	      self = this;
+		var bucket = this.bucket,
+		    self = this;
 	
-	  this.setup.then(function (db) {
-	    cb.call(self, db, bucket.name);
-	  }, function (e) {
-	    console.error("Failed", e);
-	  });
+		this.setup.then(function (db) {
+			cb.call(self, db, bucket.name);
+		}, function (e) {
+			console.error("Failed", e);
+		});
 	};
 	
 	BucketStore.prototype.get = function (id, callback) {
-	  this.withBucket(function (db, bucket) {
-	    var req = db.transaction(bucket).objectStore(bucket).get(id);
-	    req.onsuccess = function (e) {
-	      callback(null, e.target.result);
-	    };
-	    req.onerror = function (e) {
-	      callback(e);
-	    };
-	  });
+		this.withBucket(function (db, bucket) {
+			var req = db.transaction(bucket).objectStore(bucket).get(id);
+			req.onsuccess = function (e) {
+				callback(null, e.target.result);
+			};
+			req.onerror = function (e) {
+				callback(e);
+			};
+		});
 	};
 	
 	BucketStore.prototype.update = function (id, data, callback) {
-	  var beforeIndex = this.beforeIndex || function () {
-	    return arguments[0];
-	  },
-	      self = this;
-	  this.withBucket(function (db, bucket) {
-	    var object = { id: id, data: data };
-	    var req = db.transaction(bucket, 'readwrite').objectStore(bucket).put(beforeIndex(object));
-	    req.onsuccess = function (e) {
-	      self.get(id, callback);
-	    };
-	    req.onerror = function (e) {
-	      callback(e);
-	    };
-	  });
+		var beforeIndex = this.beforeIndex || function () {
+			return arguments[0];
+		},
+		    self = this;
+		this.withBucket(function (db, bucket) {
+			var object = { id: id, data: data };
+			var req = db.transaction(bucket, 'readwrite').objectStore(bucket).put(beforeIndex(object));
+			req.onsuccess = function (e) {
+				self.get(id, callback);
+			};
+			req.onerror = function (e) {
+				callback(e);
+			};
+		});
 	};
 	
 	BucketStore.prototype.remove = function (id, callback) {
-	  this.withBucket(function (db, bucket) {
-	    db.transaction(bucket, 'readwrite').objectStore(bucket)['delete'](id).onsuccess = function (e) {
-	      callback(null, e.target.result);
-	    };
-	  });
+		this.withBucket(function (db, bucket) {
+			db.transaction(bucket, 'readwrite').objectStore(bucket)['delete'](id).onsuccess = function (e) {
+				callback(null, e.target.result);
+			};
+		});
 	};
 	
 	BucketStore.prototype.find = function (query, callback) {
 	
-	  this.withBucket(function (db, bucket) {
+		this.withBucket(function (db, bucket) {
 	
-	    var objects = [];
-	    var request = db.transaction(bucket).objectStore(bucket).openCursor();
+			var objects = [];
+			var request = db.transaction(bucket).objectStore(bucket).openCursor();
 	
-	    request.onsuccess = function (e) {
-	      var cursor = e.target.result;
-	      if (cursor) {
-	        objects.push(cursor.value);
-	        cursor['continue']();
-	      } else {
-	        callback(null, objects);
-	      }
-	    };
-	    request.onerror = function (e) {
-	      console.lor("Failed");
-	    };
-	  });
+			request.onsuccess = function (e) {
+				var cursor = e.target.result;
+				if (cursor) {
+					objects.push(cursor.value);
+					cursor['continue']();
+				} else {
+					callback(null, objects);
+				}
+			};
+			request.onerror = function (e) {
+				callback(e);
+			};
+		});
 	};
 
 /***/ },
@@ -37122,7 +37122,7 @@
 	
 	
 	// module
-	exports.push([module.id, "@charset \"UTF-8\";\n/**\n * Variables\n */\n/* New blue: #4895d9 */\n/**\n * General\n */\nbody {\n  margin: 0;\n  font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n  overflow: hidden;\n  -webkit-touch-callout: none;\n  -webkit-user-select: none; }\n\n.simplenote-app {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.source-list,\n.detail {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: column;\n  -webkit-flex-direction: column;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.detail {\n  overflow: hidden;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n\n.source-list {\n  min-width: 200px;\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 300px;\n  -webkit-flex-basis: 300px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  border-right: 1px solid #eee;\n  cursor: default; }\n\n.note-list:focus {\n  outline: none; }\n\n.source-list-item {\n  cursor: pointer;\n  padding: 8px 24px 8px 12px;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center;\n  -webkit-tap-highlight-color: transparent; }\n  .source-list-item > div:first-child {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 18px;\n    -webkit-flex-basis: 18px;\n    align-self: auto;\n    -webkit-align-self: auto;\n    height: 18px;\n    width: 18px;\n    margin-right: 12px; }\n  .source-list-item.pinned > div:first-child {\n    border-radius: 18px;\n    background: #bdd6ed; }\n  .source-list-item:hover {\n    background: #f9f9f9; }\n  .source-list-item.selected {\n    background: #eef3f8; }\n    :focus .source-list-item.selected {\n      background: #e5ebf0; }\n\n.note-preview {\n  overflow: hidden; }\n\n.title,\n.preview {\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.preview {\n  color: #999; }\n\n.toolbar,\n.toolbar-compact {\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 44px;\n  -webkit-flex-basis: 44px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  position: relative; }\n\n.toolbar-compact {\n  border-bottom: 1px solid #eee; }\n\n.source-list .toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: 0;\n  -webkit-justify-content: 0;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  overflow: hidden; }\n\n.source-list .toolbar-compact {\n  overflow: hidden; }\n\n.detail .toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: 0;\n  -webkit-justify-content: 0;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.toolbar-compact {\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 36px;\n  -webkit-flex-basis: 36px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  height: 36px; }\n\n.editor-wrapper {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0; }\n\n.editor {\n  box-sizing: border-box;\n  -webkit-box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  padding: 24px 48px;\n  border: none;\n  font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n  color: #666;\n  background: #f9f9f9;\n  transition: 200ms;\n  -webkit-transition: 200ms;\n  resize: none;\n  -webkit-overflow-scrolling: touch;\n  -webkit-tap-highlight-color: transparent; }\n  .editor:hover {\n    background: #fff; }\n  .editor:focus {\n    color: #333;\n    outline: none;\n    background: #fff; }\n\n.panel {\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto;\n  position: relative; }\n\n.note-list {\n  position: absolute;\n  display: block;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  overflow: auto;\n  -webkit-overflow-scrolling: touch; }\n\n.tag-editor {\n  height: 100%;\n  padding: 0 8px 0 4px;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center;\n  overflow-x: scroll;\n  overflow-y: hidden;\n  -webkit-overflow-scrolling: touch; }\n  .tag-editor:focus {\n    outline: none; }\n  .tag-editor::-webkit-scrollbar {\n    width: 2px;\n    height: 2px; }\n  .tag-editor::-webkit-scrollbar-track {\n    border-radius: 10px; }\n  .tag-editor::-webkit-scrollbar-thumb {\n    background: #eee; }\n  .tag-editor:hover::-webkit-scrollbar-thumb {\n    background: #999; }\n\n.tag-chip {\n  margin: 2px;\n  padding: 1px 10px;\n  cursor: default;\n  border-radius: 14px;\n  white-space: nowrap;\n  background: #eee;\n  color: #666;\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n  .tag-chip.selected {\n    background: #666;\n    color: #fff; }\n\n.tag-field {\n  margin: 4px 6px;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n  .tag-field input {\n    width: 100%;\n    min-width: 140px;\n    border: none;\n    outline: none;\n    font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n    color: #333; }\n\n.tag-menu {\n  padding: 0 8px;\n  height: 100%;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center; }\n\n.tag-menu-label::before {\n  content: \"\\25BC\";\n  margin-right: 2px;\n  display: inline-block;\n  font-size: 10px;\n  vertical-align: middle;\n  width: 18px;\n  text-align: center; }\n\n.detail-toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: 100%;\n  -webkit-flex-basis: 100%;\n  align-self: auto;\n  -webkit-align-self: auto;\n  padding: 8px; }\n  .detail-toolbar > div {\n    margin: 0 8px;\n    width: 28px;\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: center;\n    -webkit-justify-content: center;\n    align-items: center;\n    -webkit-align-items: center; }\n    .detail-toolbar > div:first-child {\n      margin: 0 8px 0 0; }\n    .detail-toolbar > div:focus {\n      outline: none; }\n    .detail-toolbar > div:active {\n      background: #bdd6ed; }\n    .detail-toolbar > div:last-child {\n      width: auto; }\n\n.search-field {\n  height: 100%;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: space-between;\n  -webkit-justify-content: space-between;\n  align-items: center;\n  -webkit-align-items: center;\n  padding: 0 8px; }\n  .search-field input {\n    flex-grow: 1;\n    -webkit-flex-grow: 1;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: auto;\n    -webkit-flex-basis: auto;\n    align-self: auto;\n    -webkit-align-self: auto;\n    border-radius: 50px;\n    border: 1px solid #eee;\n    padding: 4px 8px;\n    -webkit-appearance: none; }\n    .search-field input:focus {\n      outline: none; }\n\n.navigation-bar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: space-between;\n  -webkit-justify-content: space-between;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: 100%;\n  -webkit-flex-basis: 100%;\n  align-self: auto;\n  -webkit-align-self: auto;\n  padding: 8px; }\n  .navigation-bar > div {\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: center;\n    -webkit-justify-content: center;\n    align-items: center;\n    -webkit-align-items: center;\n    flex-grow: 1;\n    -webkit-flex-grow: 1;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: 100%;\n    -webkit-flex-basis: 100%;\n    align-self: auto;\n    -webkit-align-self: auto; }\n    .navigation-bar > div:first-child,\n    .navigation-bar > div:last-child {\n      flex-grow: 1;\n      -webkit-flex-grow: 1;\n      flex-shrink: 0;\n      -webkit-flex-shrink: 0;\n      flex-basis: 28px;\n      -webkit-flex-basis: 28px;\n      align-self: auto;\n      -webkit-align-self: auto; }\n\n/**\n * Buttons & Forms\n */\ninput[type=\"text\"],\ninput[type=\"password\"] {\n  font-size: 14px;\n  font-family: \"Source Sans Pro\", sans-serif; }\n\n.button,\n.textbutton {\n  color: #6da3d3;\n  fill: #6da3d3;\n  transition: all 0.1s linear;\n  cursor: pointer;\n  -webkit-tap-highlight-color: transparent; }\n\n.textbutton:hover {\n  text-decoration: underline; }\n\n.button {\n  background: #fff;\n  border-radius: 2px; }\n  .button:hover {\n    background: #eef3f8; }\n  .button:focus {\n    outline: none; }\n  .button:active {\n    background: #bdd6ed; }\n\n/**\n * Revision selector\n */\n.revision-selector {\n  border-top: 1px solid #eee;\n  padding: 8px; }\n\n/**\n * Sign In/Sign Up\n */\n.app {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: center;\n  -webkit-justify-content: center;\n  align-items: center;\n  -webkit-align-items: center; }\n\n.login-form {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: column;\n  -webkit-flex-direction: column;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: center;\n  -webkit-justify-content: center;\n  align-items: center;\n  -webkit-align-items: center; }\n  .login-form svg {\n    fill: #6da3d3;\n    margin-bottom: 20px; }\n  .login-form > div {\n    flex-grow: 1 0 auto;\n    -webkit-flex-grow: 1 0 auto;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: auto;\n    -webkit-flex-basis: auto;\n    align-self: auto;\n    -webkit-align-self: auto;\n    margin-bottom: -1px; }\n  .login-form input {\n    max-width: 100%;\n    min-width: 200px; }\n  .login-form input:focus {\n    position: relative;\n    z-index: 1; }\n  .login-form > div:last-child {\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: flex-end;\n    -webkit-justify-content: flex-end;\n    align-items: center;\n    -webkit-align-items: center;\n    margin-top: 20px; }\n  .login-form .button {\n    padding: 4px 8px; }\n\n/**\n * Responsive\n */\n.detail-toolbar > div.backButton {\n  display: none; }\n\n@media only screen and (max-width: 700px) {\n  .source-list {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: 35%;\n    -webkit-flex-basis: 35%;\n    align-self: auto;\n    -webkit-align-self: auto; } }\n\n@media only screen and (max-width: 520px) {\n  .detail-toolbar > div.backButton {\n    display: flex; }\n  .detail,\n  .source-list {\n    transition: all 0.1s linear;\n    transform: translateZ(0); }\n  .detail {\n    display: none; }\n  .source-list {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 100%;\n    -webkit-flex-basis: 100%;\n    align-self: auto;\n    -webkit-align-self: auto; }\n  .note-open .detail {\n    display: flex; }\n  .note-open .source-list {\n    min-width: 0;\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 0%;\n    -webkit-flex-basis: 0%;\n    align-self: auto;\n    -webkit-align-self: auto; } }\n", ""]);
+	exports.push([module.id, "@charset \"UTF-8\";\n/**\n * Variables\n */\n/* New blue: #4895d9 */\n/**\n * General\n */\nbody {\n  margin: 0;\n  font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n  overflow: hidden;\n  -webkit-touch-callout: none;\n  -webkit-user-select: none; }\n\n.simplenote-app {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.source-list,\n.detail {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: column;\n  -webkit-flex-direction: column;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.detail {\n  overflow: hidden;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n\n.source-list {\n  min-width: 200px;\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 300px;\n  -webkit-flex-basis: 300px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  border-right: 1px solid #eee;\n  cursor: default; }\n\n.note-list:focus {\n  outline: none; }\n\n.source-list-item {\n  cursor: pointer;\n  padding: 8px 24px 8px 12px;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center;\n  -webkit-tap-highlight-color: transparent; }\n  .source-list-item > div:first-child {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 18px;\n    -webkit-flex-basis: 18px;\n    align-self: auto;\n    -webkit-align-self: auto;\n    height: 18px;\n    width: 18px;\n    margin-right: 12px; }\n  .source-list-item.pinned > div:first-child {\n    border-radius: 18px;\n    background: #bdd6ed; }\n  .source-list-item:hover {\n    background: #f9f9f9; }\n  .source-list-item.selected {\n    background: #eef3f8; }\n    :focus .source-list-item.selected {\n      background: #e5ebf0; }\n\n.note-preview {\n  overflow: hidden; }\n\n.title,\n.preview {\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  overflow: hidden; }\n\n.preview {\n  color: #999; }\n\n.toolbar,\n.toolbar-compact {\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 44px;\n  -webkit-flex-basis: 44px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  position: relative; }\n\n.toolbar-compact {\n  border-bottom: 1px solid #eee; }\n\n.source-list .toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: 0;\n  -webkit-justify-content: 0;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  overflow: hidden; }\n\n.source-list .toolbar-compact {\n  overflow: hidden; }\n\n.detail .toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: 0;\n  -webkit-justify-content: 0;\n  align-items: stretch;\n  -webkit-align-items: stretch; }\n\n.toolbar-compact {\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: 36px;\n  -webkit-flex-basis: 36px;\n  align-self: auto;\n  -webkit-align-self: auto;\n  height: 36px; }\n\n.editor-wrapper {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0; }\n\n.editor {\n  box-sizing: border-box;\n  -webkit-box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  padding: 24px 48px;\n  border: none;\n  font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n  color: #666;\n  background: #f9f9f9;\n  transition: 200ms;\n  -webkit-transition: 200ms;\n  resize: none;\n  -webkit-overflow-scrolling: touch;\n  -webkit-transform: translate3d(0, 0, 0);\n  -webkit-tap-highlight-color: transparent; }\n  .editor:hover {\n    background: #fff; }\n  .editor:focus {\n    color: #333;\n    outline: none;\n    background: #fff; }\n\n.panel {\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto;\n  position: relative; }\n\n.note-list {\n  position: absolute;\n  display: block;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  overflow: auto;\n  -webkit-overflow-scrolling: touch;\n  -webkit-transform: translate3d(0, 0, 0); }\n\n.tag-editor {\n  height: 100%;\n  padding: 0 8px 0 4px;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center;\n  overflow-x: scroll;\n  overflow-y: hidden;\n  -webkit-overflow-scrolling: touch; }\n  .tag-editor:focus {\n    outline: none; }\n  .tag-editor::-webkit-scrollbar {\n    width: 2px;\n    height: 2px; }\n  .tag-editor::-webkit-scrollbar-track {\n    border-radius: 10px; }\n  .tag-editor::-webkit-scrollbar-thumb {\n    background: #eee; }\n  .tag-editor:hover::-webkit-scrollbar-thumb {\n    background: #999; }\n\n.tag-chip {\n  margin: 2px;\n  padding: 1px 10px;\n  cursor: default;\n  border-radius: 14px;\n  white-space: nowrap;\n  background: #eee;\n  color: #666;\n  flex-grow: 0;\n  -webkit-flex-grow: 0;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n  .tag-chip.selected {\n    background: #666;\n    color: #fff; }\n\n.tag-field {\n  margin: 4px 6px;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 0;\n  -webkit-flex-shrink: 0;\n  flex-basis: auto;\n  -webkit-flex-basis: auto;\n  align-self: auto;\n  -webkit-align-self: auto; }\n  .tag-field input {\n    width: 100%;\n    min-width: 140px;\n    border: none;\n    outline: none;\n    font: 14px/1.5 \"Source Sans Pro\", sans-serif;\n    color: #333; }\n\n.tag-menu {\n  padding: 0 8px;\n  height: 100%;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: center;\n  -webkit-align-items: center; }\n\n.tag-menu-label::before {\n  content: \"\\25BC\";\n  margin-right: 2px;\n  display: inline-block;\n  font-size: 10px;\n  vertical-align: middle;\n  width: 18px;\n  text-align: center; }\n\n.detail-toolbar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: flex-start;\n  -webkit-justify-content: flex-start;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: 100%;\n  -webkit-flex-basis: 100%;\n  align-self: auto;\n  -webkit-align-self: auto;\n  padding: 8px; }\n  .detail-toolbar > div {\n    margin: 0 8px;\n    width: 28px;\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: center;\n    -webkit-justify-content: center;\n    align-items: center;\n    -webkit-align-items: center; }\n    .detail-toolbar > div:first-child {\n      margin: 0 8px 0 0; }\n    .detail-toolbar > div:focus {\n      outline: none; }\n    .detail-toolbar > div:active {\n      background: #bdd6ed; }\n    .detail-toolbar > div:last-child {\n      width: auto; }\n\n.search-field {\n  height: 100%;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: space-between;\n  -webkit-justify-content: space-between;\n  align-items: center;\n  -webkit-align-items: center;\n  padding: 0 8px; }\n  .search-field input {\n    flex-grow: 1;\n    -webkit-flex-grow: 1;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: auto;\n    -webkit-flex-basis: auto;\n    align-self: auto;\n    -webkit-align-self: auto;\n    border-radius: 50px;\n    border: 1px solid #eee;\n    padding: 4px 8px;\n    -webkit-appearance: none; }\n    .search-field input:focus {\n      outline: none; }\n\n.navigation-bar {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: space-between;\n  -webkit-justify-content: space-between;\n  align-items: stretch;\n  -webkit-align-items: stretch;\n  flex-grow: 1;\n  -webkit-flex-grow: 1;\n  flex-shrink: 1;\n  -webkit-flex-shrink: 1;\n  flex-basis: 100%;\n  -webkit-flex-basis: 100%;\n  align-self: auto;\n  -webkit-align-self: auto;\n  padding: 8px; }\n  .navigation-bar > div {\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: center;\n    -webkit-justify-content: center;\n    align-items: center;\n    -webkit-align-items: center;\n    flex-grow: 1;\n    -webkit-flex-grow: 1;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: 100%;\n    -webkit-flex-basis: 100%;\n    align-self: auto;\n    -webkit-align-self: auto; }\n    .navigation-bar > div:first-child,\n    .navigation-bar > div:last-child {\n      flex-grow: 1;\n      -webkit-flex-grow: 1;\n      flex-shrink: 0;\n      -webkit-flex-shrink: 0;\n      flex-basis: 28px;\n      -webkit-flex-basis: 28px;\n      align-self: auto;\n      -webkit-align-self: auto; }\n\n/**\n * Buttons & Forms\n */\ninput[type=\"text\"],\ninput[type=\"password\"] {\n  font-size: 14px;\n  font-family: \"Source Sans Pro\", sans-serif; }\n\n.button,\n.textbutton {\n  color: #6da3d3;\n  fill: #6da3d3;\n  transition: all 0.1s linear;\n  cursor: pointer;\n  -webkit-tap-highlight-color: transparent; }\n\n.textbutton:hover {\n  text-decoration: underline; }\n\n.button {\n  background: #fff;\n  border-radius: 2px; }\n  .button:hover {\n    background: #eef3f8; }\n  .button:focus {\n    outline: none; }\n  .button:active {\n    background: #bdd6ed; }\n\n/**\n * Revision selector\n */\n.revision-selector {\n  border-top: 1px solid #eee;\n  padding: 8px; }\n\n/**\n * Sign In/Sign Up\n */\n.app {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: row;\n  -webkit-flex-direction: row;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: center;\n  -webkit-justify-content: center;\n  align-items: center;\n  -webkit-align-items: center; }\n\n.login-form {\n  display: flex;\n  display: -webkit-flex;\n  flex-direction: column;\n  -webkit-flex-direction: column;\n  flex-wrap: nowrap;\n  -webkit-flex-wrap: nowrap;\n  justify-content: center;\n  -webkit-justify-content: center;\n  align-items: center;\n  -webkit-align-items: center; }\n  .login-form svg {\n    fill: #6da3d3;\n    margin-bottom: 20px; }\n  .login-form > div {\n    flex-grow: 1 0 auto;\n    -webkit-flex-grow: 1 0 auto;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: auto;\n    -webkit-flex-basis: auto;\n    align-self: auto;\n    -webkit-align-self: auto;\n    margin-bottom: -1px; }\n  .login-form input {\n    max-width: 100%;\n    min-width: 200px; }\n  .login-form input:focus {\n    position: relative;\n    z-index: 1; }\n  .login-form > div:last-child {\n    display: flex;\n    display: -webkit-flex;\n    flex-direction: row;\n    -webkit-flex-direction: row;\n    flex-wrap: nowrap;\n    -webkit-flex-wrap: nowrap;\n    justify-content: flex-end;\n    -webkit-justify-content: flex-end;\n    align-items: center;\n    -webkit-align-items: center;\n    margin-top: 20px; }\n  .login-form .button {\n    padding: 4px 8px; }\n\n/**\n * Responsive\n */\n.detail-toolbar > div.backButton {\n  display: none; }\n\n@media only screen and (max-width: 700px) {\n  .source-list {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 1;\n    -webkit-flex-shrink: 1;\n    flex-basis: 35%;\n    -webkit-flex-basis: 35%;\n    align-self: auto;\n    -webkit-align-self: auto; } }\n\n@media only screen and (max-width: 520px) {\n  .detail-toolbar > div.backButton {\n    display: flex; }\n  .detail,\n  .source-list {\n    transition: all 0.1s linear;\n    transform: translateZ(0); }\n  .detail {\n    display: none; }\n  .source-list {\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 100%;\n    -webkit-flex-basis: 100%;\n    align-self: auto;\n    -webkit-align-self: auto; }\n  .note-open .detail {\n    display: flex; }\n  .note-open .source-list {\n    min-width: 0;\n    flex-grow: 0;\n    -webkit-flex-grow: 0;\n    flex-shrink: 0;\n    -webkit-flex-shrink: 0;\n    flex-basis: 0%;\n    -webkit-flex-basis: 0%;\n    align-self: auto;\n    -webkit-align-self: auto; } }\n", ""]);
 	
 	// exports
 
