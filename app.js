@@ -94,12 +94,12 @@
 	
 	__webpack_require__(432);
 	
-	var token = cookie.token || localStorage.access_token;
+	var token = cookie.token || localStorage.access_token || config.user_token;
 	var appId = config.app_id;
 	
 	// If no token, and no app key, we're probably on the server, so redirect to simplenote login
 	if (!token && !config.app_key) {
-		// window.location = 'https://app.simplenote.com/signin';
+		window.location = 'https://app.simplenote.com/signin';
 	}
 	
 	var client = (0, _simperium2['default'])(appId, token, {
@@ -72291,7 +72291,7 @@
 		});
 	};
 	
-	BucketStore.prototype.update = function (id, data, callback) {
+	BucketStore.prototype.update = function (id, data, isIndexing, callback) {
 		var beforeIndex = this.beforeIndex || function () {
 			return arguments[0];
 		},
