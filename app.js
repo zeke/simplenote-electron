@@ -20408,7 +20408,7 @@
 						'div',
 						{ className: 'source-list theme-color-bg theme-color-fg', ref: function (ref) {
 								if (!ref) return;
-								ref.style.minWidth = sourceList.width + 'px';
+								ref.style.flexBasis = sourceList.width + 'px';
 							} },
 						_react2['default'].createElement(
 							'div',
