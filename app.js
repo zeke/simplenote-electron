@@ -19941,9 +19941,11 @@
 	
 	var detectCanResize = function detectCanResize(_ref4) {
 		var onResizable = _ref4.onResizable;
-		var width = _ref4.width;
+		var sourceListSelector = _ref4.sourceListSelector;
 		return function (e) {
-			return onResizable(Math.abs(e.clientX - width) < 3);
+			var node = document.querySelector(sourceListSelector);
+			if (!node) return;
+			onResizable(e.clientX - Math.abs(node.getBoundingClientRect().right) < 3);
 		};
 	};
 	
@@ -20378,7 +20380,7 @@
 				state.authorized ? _react2['default'].createElement(
 					'div',
 					{ className: mainClasses,
-						onMouseMove: makeResizable({ isResizing: isResizing, width: sourceList.width, onResizable: this.props.setSourceListCanResize, onUpdateWidth: this.props.setSourceListWidth }),
+						onMouseMove: makeResizable({ isResizing: isResizing, sourceListSelector: '.source-list', onResizable: this.props.setSourceListCanResize, onUpdateWidth: this.props.setSourceListWidth }),
 						onMouseDown: startResizing({ canResize: canResize, onStartResizing: this.props.setSourceListResizing }),
 						onMouseUp: stopResizing({ isResizing: isResizing, onStopResizing: function onStopResizing() {
 								return _this2.props.setSourceListResizing(false);
@@ -73911,7 +73913,7 @@
 	};
 	
 	var sourceList = function sourceList(state, _ref2) {
-		if (state === undefined) state = { width: 330, isResizing: false, canResize: false, node: null };
+		if (state === undefined) state = { width: 330, isResizing: false, canResize: false };
 		var type = _ref2.type;
 		var width = _ref2.width;
 		var canResize = _ref2.canResize;
