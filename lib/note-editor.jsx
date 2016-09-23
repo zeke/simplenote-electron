@@ -145,6 +145,7 @@ export const NoteEditor = React.createClass( {
 				}
 				{ ! isTrashed &&
 					<TagField
+						allTags={ this.props.allTags }
 						tags={tags}
 						onUpdateNoteTags={this.props.onUpdateNoteTags.bind( null, note ) } />
 				}

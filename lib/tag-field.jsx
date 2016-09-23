@@ -1,7 +1,12 @@
-import React, { PropTypes } from 'react'
-import TagChip from './tag-chip'
+import React, { PropTypes } from 'react';
+import TagChip from './tag-chip';
+import TagInput from './tag-input';
 import classNames from 'classnames';
 import analytics from './analytics';
+import {
+	difference,
+	union,
+} from 'lodash';
 
 export default React.createClass( {
 
@@ -18,12 +23,30 @@ export default React.createClass( {
 
 	getInitialState: function() {
 		return {
-			selectedTag: -1
+			selectedTag: -1,
+			tagInput: '',
 		};
 	},
 
-	componentWillReceiveProps: function() {
-		this.setState( { selectedTag: -1 } );
+	componentWillReceiveProps: function( nextProps ) {
+		const { selectedTag } = this.state;
+		const { tags: prevTags } = this.props;
+		const { tags: nextTags } = nextProps;
+
+		// if the tags changed externally, we need
+		// to match up the selected index with where
+		// the tag has moved in the list
+
+		if (
+			-1 === selectedTag || // no tag is selected
+			prevTags === nextTags // the tags are identical
+		) {
+			return;
+		}
+
+		this.setState( {
+			selectedTag: nextTags.indexOf( prevTags[ selectedTag ] ),
+		} );
 	},
 
 	componentDidUpdate: function() {
@@ -32,18 +55,24 @@ export default React.createClass( {
 		}
 	},
 
-	clearTextField: function() {
-		this.refs.tag.value = '';
-	},
-
 	addTag: function( tags ) {
-		tags = tags.trim().replace( /\s+/g, ',' ).split( ',' );
-		tags = this.props.tags.concat( tags );
-		this.props.onUpdateNoteTags( tags );
+		const newTags = tags.trim().replace( /\s+/g, ',' ).split( ',' );
+		this.props.onUpdateNoteTags( union( this.props.tags, newTags ) );
+		this.storeTagInput( '' );
 		analytics.tracks.recordEvent( 'editor_tag_added' );
 	},
 
 	onSelectTag: function( tag, index ) {
+		const { selectedTag } = this.state;
+		console.log( `Selected Tag is ${ selectedTag }.` );
+
+		// Remove tag if we already have it selected
+		if ( selectedTag === index ) {
+			console.log( `Deleting tag at index ${ index }` );
+			return this.deleteTag( index );
+		}
+		console.log( `Not deleting tag at index ${ index } (${ selectedTag })` );
+
 		this.setState( { selectedTag: index } );
 	},
 
@@ -52,19 +81,20 @@ export default React.createClass( {
 	},
 
 	deleteTag: function( index ) {
-		var tags = this.props.tags.concat( [] );
-		tags.splice( this.state.selectedTag, 1 );
+		const {
+			onUpdateNoteTags,
+			tags,
+		} = this.props;
+		const { selectedTag } = this.state;
 
-		// var state = {tags: tags};
-		let state = {};
+		const newTags = difference( tags, [ tags[ selectedTag ] ] );
 
-		if ( this.state.selectedTag === index ) {
-			state.selectedTag = -1;
+		onUpdateNoteTags( newTags );
+
+		if ( selectedTag === index ) {
+			this.setState( { selectedTag: -1 } );
 		}
 
-		this.props.onUpdateNoteTags( tags );
-
-		this.setState( state );
 		analytics.tracks.recordEvent( 'editor_tag_removed' );
 	},
 
@@ -80,34 +110,22 @@ export default React.createClass( {
 		} );
 	},
 
-	preventTyping: function( e ) {
-		e.preventDefault();
-	},
-
 	onKeyDown: function( e ) {
-		var tag = this.refs.tag.value.trim();
-		switch ( e.which ) {
-			case 13: // return key
-			case 9: // tab key
-				e.preventDefault();
-				// commit the value of the tag
-				if ( tag === '' ) return;
-				this.addTag( tag );
-				this.clearTextField();
-				break;
-			case 8: // backspace
-				// if a tag is selected, delete it, if no tag is select select right-most tag
-				if ( this.hasSelection() ) {
-					this.deleteSelection();
-				}
-				if ( tag !== '' ) return;
-				// this.getDOMNode().focus();
-				this.selectLastTag();
-				e.preventDefault();
-				break;
-			default:
-				break;
+		// only handle backspace
+		if ( 8 !== e.which ) {
+			return;
 		}
+
+		if ( this.hasSelection() ) {
+			this.deleteSelection();
+		}
+
+		if ( '' !== this.state.tagInput ) {
+			return;
+		}
+
+		this.selectLastTag();
+		e.preventDefault();
 	},
 
 	onBlur: function() {
@@ -121,6 +139,12 @@ export default React.createClass( {
 		}, 1 );
 	},
 
+	storeTagInput( value ) {
+		this.setState( {
+			tagInput: value,
+		} );
+	},
+
 	render: function() {
 		var { selectedTag } = this.state;
 
@@ -130,14 +154,23 @@ export default React.createClass( {
 					tabIndex="-1"
 					onKeyDown={this.onKeyDown}
 					onBlur={this.onBlur}>
-					<input className="hidden-tag" tabIndex="-1" ref="hiddenTag" onKeyDown={this.preventTyping} />
+					<input className="hidden-tag" tabIndex="-1" ref="hiddenTag" />
 					{this.props.tags.map( ( tag, index ) =>
-						<TagChip key={tag} tag={tag}
+						<TagChip
+							key={tag}
+							tag={tag}
 							selected={index === selectedTag}
-							onSelect={this.onSelectTag.bind( this, tag, index )} />
+							onSelect={this.onSelectTag.bind( this, tag, index )}
+						/>
 					)}
 					<div className="tag-field">
-						<input ref="tag" type="text" tabIndex="0" placeholder="Add tags &hellip;" />
+						<TagInput
+							tabIndex={ 0 }
+							value={ this.state.tagInput }
+							onChange={ this.storeTagInput }
+							onSelect={ this.addTag }
+							tagNames={ this.props.allTags.map( t => t.data.name ) }
+						/>
 					</div>
 				</div>
 			</div>
