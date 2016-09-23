@@ -1,29 +1,14 @@
-import React from 'react'
-import classNames from 'classnames'
+import React from 'react';
+import classNames from 'classnames';
+import { noop } from 'lodash';
 
-export default React.createClass( {
+export const TagChip = ( { onSelect, selected, tag: tagName } ) => (
+	<div
+		className={ classNames( 'tag-chip', { selected } ) }
+		onClick={ onSelect }
+	>
+		{ tagName }
+	</div>
+);
 
-	getDefaultProps: function() {
-		return {
-			tag: '',
-			selected: false,
-			onSelect: function() {}
-		};
-	},
-
-	onClick: function( e ) {
-		e.preventDefault();
-		this.props.onSelect( e );
-	},
-
-	render: function() {
-		return (
-			<a
-				className={classNames( 'tag-chip', { selected: this.props.selected } )}
-				href="#"
-				onClick={this.onClick}>
-				{this.props.tag}
-			</a>
-		)
-	}
-} );
+export default TagChip;
