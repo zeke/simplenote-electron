@@ -64,14 +64,11 @@ export default React.createClass( {
 
 	onSelectTag: function( tag, index ) {
 		const { selectedTag } = this.state;
-		console.log( `Selected Tag is ${ selectedTag }.` );
 
 		// Remove tag if we already have it selected
 		if ( selectedTag === index ) {
-			console.log( `Deleting tag at index ${ index }` );
 			return this.deleteTag( index );
 		}
-		console.log( `Not deleting tag at index ${ index } (${ selectedTag })` );
 
 		this.setState( { selectedTag: index } );
 	},
