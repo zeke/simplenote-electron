@@ -38,7 +38,7 @@ export class TagInput extends Component {
 	};
 
 	onChange = ( event, { newValue } ) =>
-		newValue.endsWith( ',' )
+		newValue.endsWith( ',' ) // commas should automatically insert the tag
 			? this.onSuggestionSelected( null, { suggestionValue: newValue.slice( 0, -1 ) } )
 			: this.props.onChange( newValue );
 
