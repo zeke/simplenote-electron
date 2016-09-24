@@ -11,6 +11,7 @@ const startsWith = prefix => text =>
 
 export class TagInput extends Component {
 	static propTypes = {
+		inputRef: PropTypes.func,
 		onChange: PropTypes.func,
 		onSelect: PropTypes.func,
 		tabIndex: PropTypes.number,
@@ -19,6 +20,7 @@ export class TagInput extends Component {
 	};
 
 	static defaultProps = {
+		inputRef: identity,
 		onChange: identity,
 		onSelect: identity,
 	};
@@ -28,6 +30,12 @@ export class TagInput extends Component {
 
 		this.state = {
 			suggestions: [],
+		};
+
+		this.storeInputRef = r => {
+			this.inputRef = r;
+
+			this.props.inputRef( r.input );
 		};
 	}
 
@@ -66,6 +74,7 @@ export class TagInput extends Component {
 		return (
 			<div className="tag-input">
 				<Autosuggest { ...{
+					ref: this.storeInputRef,
 					suggestions,
 					focusFirstSuggestion: true,
 					getSuggestionValue: identity,

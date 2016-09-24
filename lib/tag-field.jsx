@@ -92,6 +92,10 @@ export default React.createClass( {
 			this.setState( { selectedTag: -1 } );
 		}
 
+		if ( this.tagInputRef ) {
+			this.tagInputRef.focus();
+		}
+
 		analytics.tracks.recordEvent( 'editor_tag_removed' );
 	},
 
@@ -142,6 +146,10 @@ export default React.createClass( {
 		} );
 	},
 
+	storeTagInputRef( r ) {
+		this.tagInputRef = r;
+	},
+
 	render: function() {
 		var { selectedTag } = this.state;
 
@@ -162,6 +170,7 @@ export default React.createClass( {
 					)}
 					<div className="tag-field">
 						<TagInput
+							inputRef={ this.storeTagInputRef }
 							tabIndex={ 0 }
 							value={ this.state.tagInput }
 							onChange={ this.storeTagInput }
