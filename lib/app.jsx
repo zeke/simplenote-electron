@@ -10,6 +10,7 @@ import {
 	authIsPending,
 	isAuthorized,
 } from './state/auth/selectors';
+import { getSelectedCollection } from './state/ui/selectors';
 import browserShell from './browser-shell'
 import { ContextMenu, MenuItem, Separator } from './context-menu';
 import * as Dialogs from './dialogs/index'
@@ -61,6 +62,7 @@ const mapStateToProps = state => ( {
 	...state,
 	authIsPending: authIsPending( state ),
 	isAuthorized: isAuthorized( state ),
+	selectedCollection: getSelectedCollection( state ),
 } )
 
 function mapDispatchToProps( dispatch, { noteBucket } ) {
@@ -207,6 +209,8 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			resetAuth,
 			setAuthorized,
 		} = this.props;
+
+		const isAuthorized = client.isAuthorized();
 
 		actions.authChanged();
 
@@ -473,6 +477,7 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			appState: state,
 			authIsPending,
 			isAuthorized,
+			selectedCollection,
 		} = this.props;
 		const electron = get( this.state, 'electron' );
 		const { settings, isSmallScreen } = this.props;
