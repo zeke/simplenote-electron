@@ -2,6 +2,9 @@ import React, { PropTypes } from 'react'
 import TagChip from './tag-chip'
 import classNames from 'classnames';
 import analytics from './analytics';
+import {
+	uniq,
+} from 'lodash';
 
 export default React.createClass( {
 
@@ -123,6 +126,7 @@ export default React.createClass( {
 
 	render: function() {
 		var { selectedTag } = this.state;
+		const { tags } = this.props;
 
 		return (
 			<div className="tag-entry theme-color-border">
@@ -131,7 +135,7 @@ export default React.createClass( {
 					onKeyDown={this.onKeyDown}
 					onBlur={this.onBlur}>
 					<input className="hidden-tag" tabIndex="-1" ref="hiddenTag" onKeyDown={this.preventTyping} />
-					{this.props.tags.map( ( tag, index ) =>
+					{ uniq( tags ).map( ( tag, index ) =>
 						<TagChip key={tag} tag={tag}
 							selected={index === selectedTag}
 							onSelect={this.onSelectTag.bind( this, tag, index )} />
