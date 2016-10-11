@@ -1,12 +1,15 @@
-import React from 'react'
+import React from 'react';
+import classNames from 'classnames';
+import { connect } from 'react-redux';
+
 import TagList from './tag-list'
 import NotesIcon from './icons/notes'
 import TrashIcon from './icons/trash'
 import SettingsIcon from './icons/settings'
+import { selectTrashedNotes } from './state/ui/actions';
 import { viewExternalUrl } from './utils/url-utils'
-import classNames from 'classnames'
 
-export default React.createClass( {
+export const NavigationBar = React.createClass( {
 
 	getDefaultProps: function() {
 		return {
@@ -77,3 +80,9 @@ export default React.createClass( {
 		);
 	}
 } );
+
+const mapDispatchToProps = ( dispatch, { onSelectTrash } ) => ( {
+	onSelectTrash: () => dispatch( selectTrashedNotes() ) && onSelectTrash(),
+} );
+
+export default connect( null, mapDispatchToProps )( NavigationBar );

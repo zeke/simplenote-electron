@@ -479,6 +479,7 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			isAuthorized,
 			selectedCollection,
 		} = this.props;
+
 		const electron = get( this.state, 'electron' );
 		const { settings, isSmallScreen } = this.props;
 		const filteredNotes = this.filterNotes();
