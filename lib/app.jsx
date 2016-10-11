@@ -10,6 +10,10 @@ import {
 	authIsPending,
 	isAuthorized,
 } from './state/auth/selectors';
+import {
+	selectAllNotes,
+	selectTrashedNotes,
+} from './state/ui/actions';
 import { getSelectedCollection } from './state/ui/selectors';
 import browserShell from './browser-shell'
 import { ContextMenu, MenuItem, Separator } from './context-menu';
@@ -90,6 +94,8 @@ function mapDispatchToProps( dispatch, { noteBucket } ) {
 		toggleSortOrder: thenReloadNotes( settingsActions.toggleSortOrder ),
 
 		resetAuth: () => dispatch( resetAuth() ),
+		selectAllNotes: () => dispatch( actionCreators.selectAllNotes() ),
+		selectTrashedNotes: () => dispatch( actionCreators.selectTrash() ),
 		setAuthorized: () => dispatch( setAuthorized() ),
 	};
 }
@@ -477,7 +483,9 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			appState: state,
 			authIsPending,
 			isAuthorized,
+			selectAllNotes,
 			selectedCollection,
+			selectTrashedNotes,
 		} = this.props;
 
 		const electron = get( this.state, 'electron' );
@@ -515,8 +523,8 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 				{ isAuthorized ?
 						<div className={mainClasses}>
 							<NavigationBar
-								onSelectAllNotes={() => this.props.actions.selectAllNotes() }
-								onSelectTrash={() => this.props.actions.selectTrash() }
+								onSelectAllNotes={ selectAllNotes }
+								onSelectTrash={ selectTrashedNotes }
 								onSelectTag={this.onSelectTag}
 								onSettings={this.onSettings}
 								onAbout={this.onAbout}

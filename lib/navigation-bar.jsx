@@ -6,7 +6,10 @@ import TagList from './tag-list'
 import NotesIcon from './icons/notes'
 import TrashIcon from './icons/trash'
 import SettingsIcon from './icons/settings'
-import { selectTrashedNotes } from './state/ui/actions';
+import {
+	selectAllNotes,
+	selectTrashedNotes,
+} from './state/ui/actions';
 import { viewExternalUrl } from './utils/url-utils'
 
 export const NavigationBar = React.createClass( {
@@ -41,6 +44,11 @@ export const NavigationBar = React.createClass( {
 	},
 
 	render: function() {
+		const {
+			onSelectAllNotes,
+			onSelectTrash,
+		} = this.props;
+
 		const classes = classNames( 'button', 'button-borderless', 'theme-color-fg' );
 		const allNotesClasses = classNames(
 			this.getNavigationItemClass( false ),
@@ -54,11 +62,19 @@ export const NavigationBar = React.createClass( {
 		return (
 			<div className="navigation theme-color-bg theme-color-fg theme-color-border">
 				<div className="navigation-folders">
-					<button type="button" className={allNotesClasses} onClick={this.props.onSelectAllNotes}>
+					<button
+						type="button"
+						className={allNotesClasses}
+						onClick={ onSelectAllNotes }
+					>
 						<span className="navigation-icon"><NotesIcon /></span>
 						All Notes
 					</button>
-					<button type="button" className={trashClasses} onClick={this.props.onSelectTrash}>
+					<button
+						type="button"
+						className={trashClasses}
+						onClick={ onSelectTrash }
+					>
 						<span className="navigation-icon"><TrashIcon /></span>
 						Trash
 					</button>
@@ -81,8 +97,9 @@ export const NavigationBar = React.createClass( {
 	}
 } );
 
-const mapDispatchToProps = ( dispatch, { onSelectTrash } ) => ( {
-	onSelectTrash: () => dispatch( selectTrashedNotes() ) && onSelectTrash(),
+const mapDispatchToProps = ( dispatch, { onSelectAllNotes, onSelectTrash } ) => ( {
+	onSelectAllNotes: () => { dispatch( selectAllNotes() ); onSelectAllNotes() },
+	onSelectTrash: () => { dispatch( selectTrashedNotes() ); onSelectTrash() },
 } );
 
 export default connect( null, mapDispatchToProps )( NavigationBar );

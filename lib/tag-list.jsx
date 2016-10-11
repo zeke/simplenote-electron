@@ -1,7 +1,15 @@
 import React, { Component, PropTypes } from 'react'
+import { connect } from 'react-redux';
 import classNames from 'classnames'
+import {
+	get,
+	matchesProperty,
+} from 'lodash'
+
 import EditableList from './editable-list'
-import { get } from 'lodash'
+import { selectTag } from './state/ui/actions';
+
+export const TagList = React.createClass( {
 
 export default class TagList extends Component {
 	static propTypes = {
@@ -70,4 +78,8 @@ export default class TagList extends Component {
 	}
 }
 
-export default TagList;
+const mapDispatchToProps = ( dispatch, { onSelectTag } ) => ( {
+	selectTag: tag => { dispatch( selectTag( tag ) ); onSelectTag( tag ) },
+} );
+
+export default connect( null, mapDispatchToProps )( TagList );
