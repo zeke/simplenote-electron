@@ -10,10 +10,7 @@ import {
 	authIsPending,
 	isAuthorized,
 } from './state/auth/selectors';
-import {
-	selectAllNotes,
-	selectTrashedNotes,
-} from './state/ui/actions';
+import { getSelectedTag } from './state/tags/selectors';
 import { getSelectedCollection } from './state/ui/selectors';
 import browserShell from './browser-shell'
 import { ContextMenu, MenuItem, Separator } from './context-menu';
@@ -67,7 +64,8 @@ const mapStateToProps = state => ( {
 	authIsPending: authIsPending( state ),
 	isAuthorized: isAuthorized( state ),
 	selectedCollection: getSelectedCollection( state ),
-} )
+	selectedTag: getSelectedTag( state ),
+} );
 
 function mapDispatchToProps( dispatch, { noteBucket } ) {
 	var actionCreators = Object.assign( {},
@@ -534,8 +532,6 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 								onReorderTags={this.onReorderTags}
 								editingTags={state.editingTags}
 								showTrash={state.showTrash}
-								selectedTag={state.tag}
-								tags={state.tags}
 								onOutsideClick={this.onToolbarOutsideClick} />
 							<div className="source-list theme-color-bg theme-color-fg">
 								<div className="search-bar theme-color-border">

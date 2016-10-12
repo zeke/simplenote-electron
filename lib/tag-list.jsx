@@ -7,6 +7,7 @@ import {
 } from 'lodash'
 
 import EditableList from './editable-list'
+import { getTags } from './state/tags/selectors';
 import { selectTag } from './state/ui/actions';
 
 export const TagList = React.createClass( {
@@ -78,8 +79,12 @@ export default class TagList extends Component {
 	}
 }
 
+const mapStateToProps = state => ( {
+	tags: getTags( state ),
+} );
+
 const mapDispatchToProps = ( dispatch, { onSelectTag } ) => ( {
 	selectTag: tag => { dispatch( selectTag( tag ) ); onSelectTag( tag ) },
 } );
 
-export default connect( null, mapDispatchToProps )( TagList );
+export default connect( mapStateToProps, mapDispatchToProps )( TagList );
