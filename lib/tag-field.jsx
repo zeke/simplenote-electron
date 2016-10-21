@@ -2,9 +2,6 @@ import React, { PropTypes } from 'react'
 import TagChip from './tag-chip'
 import classNames from 'classnames';
 import analytics from './analytics';
-import {
-	uniq,
-} from 'lodash';
 
 export default React.createClass( {
 
