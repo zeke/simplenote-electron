@@ -2,15 +2,14 @@ import React, { PropTypes } from 'react';
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import appState from './flux/app-state'
-import { 
-	reset as resetAuth, 
+import {
+	reset as resetAuth,
 	setAuthorized,
 } from './state/auth/actions';
 import {
 	authIsPending,
 	isAuthorized,
 } from './state/auth/selectors';
-import { getSelectedCollection } from './state/ui/selectors';
 import browserShell from './browser-shell'
 import { ContextMenu, MenuItem, Separator } from './context-menu';
 import * as Dialogs from './dialogs/index'
@@ -39,6 +38,13 @@ import {
 	pick,
 	values,
 } from 'lodash';
+const test = require( './Pure/Test' );
+console.log( test );
+const initialPState = test.initialState;
+console.log( test.isLoggedIn( initialPState ) );
+const nextPState = test.reducer( initialPState )( new test.Login('sue' ) );
+console.log( nextPState );
+console.log( test.isLoggedIn( nextPState ) );
 
 import * as settingsActions from './state/settings/actions';
 
@@ -62,7 +68,6 @@ const mapStateToProps = state => ( {
 	...state,
 	authIsPending: authIsPending( state ),
 	isAuthorized: isAuthorized( state ),
-	selectedCollection: getSelectedCollection( state ),
 } )
 
 function mapDispatchToProps( dispatch, { noteBucket } ) {
@@ -477,7 +482,6 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			appState: state,
 			authIsPending,
 			isAuthorized,
-			selectedCollection,
 		} = this.props;
 		const electron = get( this.state, 'electron' );
 		const { settings, isSmallScreen } = this.props;

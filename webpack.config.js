@@ -1,6 +1,7 @@
 const autoprefixer = require( 'autoprefixer' );
 const AppCachePlugin = require( 'appcache-webpack-plugin' );
 const HtmlWebpackPlugin = require( 'html-webpack-plugin' );
+const path = require( 'path' );
 
 module.exports = {
 	context: __dirname + '/lib',
@@ -14,17 +15,28 @@ module.exports = {
 	},
 	module: {
 		preLoaders: [
-			{ test: /\.jsx?$/, exclude: /node_modules|lib\/simperium/, loaders: [ 'eslint-loader' ] }
+			{ test: /\.jsx?$/, exclude: /bower_components|node_modules|lib\/simperium/, loaders: [ 'eslint-loader' ] }
 		],
 		loaders: [
-			{ test: /\.jsx?$/, exclude: /node_modules/, loaders: [ 'babel' ] },
+			{ test: /\.jsx?$/, exclude: /bower_components|node_modules/, loaders: [ 'babel' ] },
 			{ test: /\.json$/, loader: 'json-loader'},
-			{ test: /\.scss$/, loader: 'style-loader!css-loader!postcss-loader!sass-loader'}
+			{ test: /\.scss$/, loader: 'style-loader!css-loader!postcss-loader!sass-loader'},
+			{
+				test: /\.purs$/,
+				loader: 'purs-loader',
+				exclude: /node_modules/,
+				query: {
+					src: [
+						path.join('lib', '**', '*.purs'),
+						path.join('bower_components', 'purescript-*', 'src', '**', '*.purs')
+					]
+				}
+			}
 		]
 	},
 	resolve: {
-		extensions: ['', '.js', '.jsx', '.json', '.scss', '.css' ],
-		moduleDirectories: [ 'lib', 'node_modules' ]
+		extensions: ['', '.js', '.jsx', '.json', '.purs', '.scss', '.css' ],
+		moduleDirectories: [ 'lib', 'node_modules', 'bower_components' ]
 	},
 	plugins: [
 		new AppCachePlugin(),

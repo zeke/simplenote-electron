@@ -1,0 +1,7 @@
+{
+  "name": "simplenote-electron",
+  "private": true,
+  "dependencies": {
+    "purescript-batteries": "0.6.0"
+  }
+}
