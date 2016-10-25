@@ -1,4 +1,5 @@
 import React, { PropTypes } from 'react';
+import SimpleDecorator from 'draft-js-simpledecorator'
 import {
 	ContentState,
 	Editor,
@@ -7,6 +8,7 @@ import {
 } from 'draft-js';
 import {
 	attempt,
+	get,
 	invoke,
 	isError,
 	matchesProperty,
@@ -109,7 +111,12 @@ function urlParser( contentBlock, callback ) {
 	parsed
 		.filter( matchesProperty( 'type', 'link' ) )
 		.map( property( 'href.location' ) )
-		.forEach( ( { start, end } ) => callback( start.offset, end.offset ) );
+		.forEach( ( { start, end } ) => callback( start.offset, end.offset, { type: 'link' } ) );
+
+	parsed
+		.filter( matchesProperty( 'type', 'header' ) )
+		.filter( ( { level } ) => level > 0 && level < 7 )
+		.map( ( { level, location: { start, end } } ) => callback( start.offset, end.offset, { type: 'header', level } ) )
 }
 
 const addMissingScheme = url =>
@@ -133,10 +140,14 @@ const openLink = event => {
 const DecoratedLink = ( { decoratedText: url, children } ) =>
 	<a href={ addMissingScheme( url ) } onClick={ openLink }>{ children }</a>;
 
-const urlDecorator = new CompositeDecorator( [ {
-	strategy: urlParser,
-	component: DecoratedLink,
-} ] );
+const Header = ( { level, children } ) => React.createElement( `h${ level }`, {}, children );
+
+const ParsedComponent = props => get( {
+	link: DecoratedLink,
+	header: Header,
+}, props.type, p => <span>{ p.children }</span> )( props );
+
+const urlDecorator = new SimpleDecorator( urlParser, ParsedComponent );
 
 export default class NoteContentEditor extends React.Component {
 	static propTypes = {

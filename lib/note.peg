@@ -2,7 +2,8 @@ Document
 	= ls:(l:Line Newline { return l })* l:Line { return ls.concat( l ) }
     
 Line
-	= ts:Token*
+	= Header
+    / ts:Token*
     {
         const tokens = ts.reduce(
         	function(out, next) {
@@ -21,6 +22,9 @@ Line
             return Object.assign( value, { location: location() } )
         } )
     }
+    
+Header
+	= l:'#'+ h:[^\n]* { return { type: 'header', level: l.length, text: h.join(''), location: location() } }
 
 Token
 	= HtmlLink
@@ -85,3 +89,4 @@ MarkdownLink
     
 Newline
 	= [\n]
+
