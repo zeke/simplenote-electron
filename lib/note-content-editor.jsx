@@ -14,6 +14,7 @@ import {
 	matchesProperty,
 	noop,
 	property,
+	overSome,
 } from 'lodash';
 
 import { parse } from './note-parser';
@@ -115,8 +116,18 @@ function urlParser( contentBlock, callback ) {
 
 	parsed
 		.filter( matchesProperty( 'type', 'header' ) )
-		.filter( ( { level } ) => level > 0 && level < 7 )
-		.map( ( { level, location: { start, end } } ) => callback( start.offset, end.offset, { type: 'header', level } ) )
+		.map( ( { level, location: { start, end } } ) => callback( start.offset, end.offset, { type: 'header', level } ) );
+
+	parsed
+		.filter( overSome( [
+			matchesProperty( 'type', 'at-mention' ),
+			matchesProperty( 'type', 'blockquote' ),
+			matchesProperty( 'type', 'code-inline' ),
+			matchesProperty( 'type', 'em' ),
+			matchesProperty( 'type', 'strong' ),
+			matchesProperty( 'type', 'strike' ),
+		] ) )
+		.map( ( { location: { start, end }, ...props } ) => callback( start.column, end.column, props ) );
 }
 
 const addMissingScheme = url =>
@@ -137,17 +148,28 @@ const openLink = event => {
 	window.open( url, '_blank' );
 };
 
+const HtmlElement = element => ( { children } ) => React.createElement( element, {}, children );
+
 const DecoratedLink = ( { decoratedText: url, children } ) =>
 	<a href={ addMissingScheme( url ) } onClick={ openLink }>{ children }</a>;
 
 const Header = ( { level, children } ) => React.createElement( `h${ level }`, {}, children );
 
 const ParsedComponent = props => get( {
+	'at-mention': HtmlElement( 'strong' ),
+	blockquote: ( { children, level } ) => <span style={ { color: [ '#333', '#666', '#999', '#aaa', '#ddd' ][ ( level - 1 ) % 4 ] } }>{ children }</span>,
+	'code-inline': HtmlElement( 'code' ),
+	em: HtmlElement( 'em' ),
 	link: DecoratedLink,
 	header: Header,
+	strike: HtmlElement( 'del' ),
+	strong: HtmlElement( 'strong' ),
 }, props.type, p => <span>{ p.children }</span> )( props );
 
-const urlDecorator = new SimpleDecorator( urlParser, ParsedComponent );
+const urlDecorator = highlight =>
+	highlight
+		? new SimpleDecorator( urlParser, ParsedComponent )
+		: undefined;
 
 export default class NoteContentEditor extends React.Component {
 	static propTypes = {
@@ -158,7 +180,7 @@ export default class NoteContentEditor extends React.Component {
 	state = {
 		editorState: EditorState.createWithContent(
 			ContentState.createFromText( this.props.content, '\n' ),
-			urlDecorator,
+			urlDecorator( this.props.markdownEnabled ),
 		)
 	}
 
@@ -181,7 +203,7 @@ export default class NoteContentEditor extends React.Component {
 		this.setState( { editorState }, announceChanges );
 	}
 
-	componentWillReceiveProps( { content: newContent } ) {
+	componentWillReceiveProps( { content: newContent, markdownEnabled } ) {
 		const { content: oldContent } = this.props;
 		const { editorState: oldEditorState } = this.state;
 
@@ -195,7 +217,7 @@ export default class NoteContentEditor extends React.Component {
 
 		let newEditorState = EditorState.createWithContent(
 			ContentState.createFromText( newContent, '\n' ),
-			urlDecorator
+			urlDecorator( markdownEnabled )
 		)
 
 		// avoids weird caret position if content is changed

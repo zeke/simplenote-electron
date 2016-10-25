@@ -3,6 +3,9 @@ Document
     
 Line
 	= Header
+    / BlockQuote
+    / ToDoItem
+    / BulletItem
     / ts:Token*
     {
         const tokens = ts.reduce(
@@ -19,18 +22,51 @@ Line
             	? { type: 'text', text: token }
                 : token;
             
-            return Object.assign( value, { location: location() } )
+            return Object.assign( { location: location() }, value )
         } )
     }
     
 Header
-	= l:'#'+ h:[^\n]* { return { type: 'header', level: l.length, text: h.join(''), location: location() } }
+	= l:'#'+ h:[^\n]*
+    ! { l.length <= 6 }
+    { return { type: 'header', level: l.length, text: h.join(''), location: location() } }
+    
+BlockQuote
+	= '>' l:([ \t]* b:'>')* [ \t]* q:[^\n]+ { return { type: 'blockquote', text: q.join(''), level: 1 + l.length, location: location() } }
+    
+BulletItem
+	= [ \t]+ [-*] ' ' s:[^\n]+ { return { type: 'list-bullet', text: s.join( '' ), location: location() } }
+    
+ToDoItem
+	= [ \t]+ '- [' isDone:[xX]? isNotDone:' '? ']' [ \t]+ t:[^\n]+ { return { type: 'todo', isDone: !! isDone, text: t.join(''), location: location() } }
 
 Token
-	= HtmlLink
+	= Strong
+    / Emphasized
+    / StrikeThrough
+    / InlineCode
+    / AtMention
+    / HtmlLink
     / MarkdownLink
     / Url
     / [^\n]
+    
+Strong
+	= '**' s:[^*]+ '**' { return { type: 'strong', text: s.join(''), location: location() } }
+    / '__' s:[^_]+ '__' { return { type: 'strong', text: s.join(''), location: location() } }
+    
+Emphasized
+	= '*' s:[^*]+ '*' { return { type: 'em', text: s.join(''), location: location() } }
+    / '_' s:[^_]+ '_' { return { type: 'em', text: s.join(''), location: location() } }
+    
+StrikeThrough
+	= '~~' s:[^~]+ '~~' { return { type: 'strike', text: s.join(''), location: location() } }
+
+InlineCode
+	= '`' s:[^`]+ '`' { return { type: 'code-inline', text: s.join(''), location: location() } }
+    
+AtMention
+	= '@' head:[a-zA-Z] tail:[a-zA-Z0-9]* { return { type: 'at-mention', text: [head].concat(tail).join(''), location: location() } }
     
 Url
 	= scheme:UrlScheme '://' host:UrlHost slash:'/'? path:UrlPath?
@@ -89,4 +125,5 @@ MarkdownLink
     
 Newline
 	= [\n]
+
 
