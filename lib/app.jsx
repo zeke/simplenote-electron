@@ -214,8 +214,6 @@ export const App = connect( mapStateToProps, mapDispatchToProps )( React.createC
 			setAuthorized,
 		} = this.props;
 
-		const isAuthorized = client.isAuthorized();
-
 		actions.authChanged();
 
 		if ( ! client.isAuthorized() ) {
