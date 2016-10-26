@@ -5,7 +5,16 @@ import {
 	EditorState,
 	Modifier,
 } from 'draft-js';
-import { invoke, noop } from 'lodash';
+import {
+	attempt,
+	invoke,
+	isError,
+	matchesProperty,
+	noop,
+	property,
+} from 'lodash';
+
+import { parse } from './note-parser';
 
 function plainTextContent( editorState ) {
 	return editorState.getCurrentContent().getPlainText( '\n' )
@@ -89,6 +98,46 @@ function outdentCurrentBlock( editorState ) {
 	);
 }
 
+function urlParser( contentBlock, callback ) {
+	const content = contentBlock.getText();
+	const parsed = attempt( parse, content );
+
+	if ( isError( parsed ) ) {
+		return;
+	}
+
+	parsed
+		.filter( matchesProperty( 'type', 'link' ) )
+		.map( property( 'href.location' ) )
+		.forEach( ( { start, end } ) => callback( start.offset, end.offset ) );
+}
+
+const addMissingScheme = url =>
+	/^[a-zA-Z0-9\-\.]+:\/\//.test( url )
+		? url
+		: `http://${ url }`;
+
+const openLink = event => {
+	const { metaKey } = event;
+
+	if ( ! metaKey ) {
+		return;
+	}
+
+	const anchor = event.target.parentNode.parentNode;
+	const url = anchor.href;
+
+	window.open( url, '_blank' );
+};
+
+const DecoratedLink = ( { decoratedText: url, children } ) =>
+	<a href={ addMissingScheme( url ) } onClick={ openLink }>{ children }</a>;
+
+const urlDecorator = new CompositeDecorator( [ {
+	strategy: urlParser,
+	component: DecoratedLink,
+} ] );
+
 export default class NoteContentEditor extends React.Component {
 	static propTypes = {
 		content: PropTypes.string.isRequired,
@@ -97,7 +146,8 @@ export default class NoteContentEditor extends React.Component {
 
 	state = {
 		editorState: EditorState.createWithContent(
-			ContentState.createFromText( this.props.content, '\n' )
+			ContentState.createFromText( this.props.content, '\n' ),
+			urlDecorator,
 		)
 	}
 
@@ -133,7 +183,8 @@ export default class NoteContentEditor extends React.Component {
 		}
 
 		let newEditorState = EditorState.createWithContent(
-			ContentState.createFromText( newContent, '\n' )
+			ContentState.createFromText( newContent, '\n' ),
+			urlDecorator
 		)
 
 		// avoids weird caret position if content is changed

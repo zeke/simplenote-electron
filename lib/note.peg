@@ -1,0 +1,87 @@
+Document
+	= ls:(l:Line Newline { return l })* l:Line { return ls.concat( l ) }
+    
+Line
+	= ts:Token*
+    {
+        const tokens = ts.reduce(
+        	function(out, next) {
+            	return typeof next === 'string' && typeof out[1] === 'string'
+                	? [ out[0].slice(0, -1).concat( out[0].slice(-1).concat( next ).join('') ), next ]
+                    : [ out[0].concat( next ), next ];
+            },
+            [[], undefined]
+        )
+        
+        return tokens[0].map( function( token ) {
+        	const value = typeof token === 'string'
+            	? { type: 'text', text: token }
+                : token;
+            
+            return Object.assign( value, { location: location() } )
+        } )
+    }
+
+Token
+	= HtmlLink
+    / MarkdownLink
+    / Url
+    / [^\n]
+    
+Url
+	= scheme:UrlScheme '://' host:UrlHost slash:'/'? path:UrlPath?
+    { return {
+    	type: 'link',
+        text: '',
+        href: {
+        	url: scheme + '://' + [ host, slash, path ].join(''),
+            location: location()
+        },
+        location: location()
+    } }
+    
+UrlScheme
+	= s:[a-z] ss:[a-z0-9+\.\-]+ { return s + ss.join('') }
+    
+UrlHost
+	= pp:UrlHostPart ps:('.' p:UrlHostPart { return p })* { return [pp].concat( ps ).join('.') }
+    
+UrlHostPart
+    = cs:[0-9a-z\-_~]+ { return cs.join('') }
+
+UrlPath
+	= ps:(p:UrlPathPart t:'/'? { return [p, t].join('') })+ { return ps.join('') }
+
+UrlPathPart
+	= c:UrlPathChar+ cs:('.' ccs:UrlPathChar+ { return '.' + ccs.join('') })* { return [c.join('')].concat( cs ).join('') }
+
+UrlPathChar
+	= [a-z0-9\-_~]
+    
+HtmlLink
+	= '<a' [ ]+ as:(a:HtmlAttribute [ ]+ { return a })* a:HtmlAttribute? '/'? '>' text:[^<]+ '</a>'
+    { return {
+    	type: 'link',
+        text: text.join(''),
+        href: {
+        	url: as.concat( a ).find( a => 'href' === a.name ).value,
+            location: as.concat( a ).find( a => 'href' === a.name ).location
+		}
+    } }
+    
+HtmlAttribute
+	= name:[a-zA-Z]+ '=' value:(v:QuotedString { return { v: v.s, l: v.l } }) { return { name: name.join(''), value: value.v, location: value.l } }
+    
+QuotedString
+	= '"' string:(s:[^"]* { return { v: s.join(''), l: location() } }) '"' { return { s: string.v, l: string.l } }
+    
+MarkdownLink
+	= '[' text:[^\]]* '](' href:(url:[^\)]+ { return { url: url, location: location() } }) ')'
+    { return {
+    	type: 'link',
+        text: text.join( '' ),
+        href: { url: href.url.join( '' ), location: href.location }
+    } }
+    
+Newline
+	= [\n]
