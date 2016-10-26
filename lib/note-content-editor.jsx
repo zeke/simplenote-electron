@@ -115,19 +115,16 @@ function urlParser( contentBlock, callback ) {
 		.forEach( ( { start, end } ) => callback( start.offset, end.offset, { type: 'link' } ) );
 
 	parsed
-		.filter( matchesProperty( 'type', 'header' ) )
-		.map( ( { level, location: { start, end } } ) => callback( start.offset, end.offset, { type: 'header', level } ) );
-
-	parsed
 		.filter( overSome( [
 			matchesProperty( 'type', 'at-mention' ),
 			matchesProperty( 'type', 'blockquote' ),
 			matchesProperty( 'type', 'code-inline' ),
 			matchesProperty( 'type', 'em' ),
+			matchesProperty( 'type', 'header' ),
 			matchesProperty( 'type', 'strong' ),
 			matchesProperty( 'type', 'strike' ),
 		] ) )
-		.map( ( { location: { start, end }, ...props } ) => callback( start.column, end.column, props ) );
+		.map( ( { location: { start, end }, ...props } ) => callback( start.offset, end.offset, props ) );
 }
 
 const addMissingScheme = url =>
@@ -153,15 +150,13 @@ const HtmlElement = element => ( { children } ) => React.createElement( element,
 const DecoratedLink = ( { decoratedText: url, children } ) =>
 	<a href={ addMissingScheme( url ) } onClick={ openLink }>{ children }</a>;
 
-const Header = ( { level, children } ) => React.createElement( `h${ level }`, {}, children );
-
 const ParsedComponent = props => get( {
 	'at-mention': HtmlElement( 'strong' ),
 	blockquote: ( { children, level } ) => <span style={ { color: [ '#333', '#666', '#999', '#aaa', '#ddd' ][ ( level - 1 ) % 4 ] } }>{ children }</span>,
 	'code-inline': HtmlElement( 'code' ),
 	em: HtmlElement( 'em' ),
 	link: DecoratedLink,
-	header: Header,
+	header: HtmlElement( `h${ props.level }` ),
 	strike: HtmlElement( 'del' ),
 	strong: HtmlElement( 'strong' ),
 }, props.type, p => <span>{ p.children }</span> )( props );
